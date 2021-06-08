@@ -1,5 +1,8 @@
 buildscript {
-    ext.kotlin_version = '1.4.32'
+    ext {
+        kotlin_version = '1.4.32'
+        sqldelight_version = '1.4.4'
+    }
 
     repositories {
         mavenCentral()
@@ -9,7 +12,7 @@ buildscript {
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.squareup.sqldelight:gradle-plugin:1.4.4'
+        classpath "com.squareup.sqldelight:gradle-plugin:$sqldelight_version"
     }
 }
 
@@ -26,7 +29,9 @@ mainClassName = 'app.MyApp'
 compileKotlin {
     kotlinOptions.jvmTarget= "1.8"
 }
-
+compileKotlin {
+    kotlinOptions.jvmTarget= 1.8
+}
 sqldelight {
     DatabaseTest { // This will be the name of the generated database class.
         packageName = "app.db"
@@ -45,10 +50,14 @@ dependencies {
 
     //sqlite and RxJava-JDBC dependencies
     implementation 'org.xerial:sqlite-jdbc:3.34.0'
-    implementation "com.squareup.sqldelight:sqlite-driver:1.5.0"
+    implementation "com.squareup.sqldelight:sqlite-driver:$sqldelight_version"
+    implementation "com.squareup.sqldelight:rxjava2-extensions:$sqldelight_version"
 
     implementation 'org.nield:rxkotlin-jdbc:0.2.5'
     implementation 'org.slf4j:slf4j-simple:1.7.21'
+
+    // Koin - di
+    implementation 'io.insert-koin:koin-core:2.2.3'
 
     //RxKotlin and RxKotlinFX dependencies
     implementation "io.reactivex.rxjava2:rxjava:2.2.20"
@@ -57,6 +66,7 @@ dependencies {
 
     //Testing dependencies
     testImplementation 'junit:junit:4.12'
+    testImplementation 'io.insert-koin:koin-test:2.2.3'
 }
 
 jar {

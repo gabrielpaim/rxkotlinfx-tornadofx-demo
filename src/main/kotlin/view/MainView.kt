@@ -1,6 +1,8 @@
 package view
 
 import com.github.thomasnield.rxkotlinfx.actionEvents
+import domain.persistence.Persistence
+import domain.persistence.initializeData
 import javafx.geometry.Orientation
 import javafx.scene.layout.BorderPane
 import tornadofx.*
@@ -13,9 +15,15 @@ class MainView : View() {
     private val appliedCustomerView: AppliedCustomerView by inject()
 
     private val controller: EventController by inject()
+    private val db: Persistence by di()
 
     init {
         title = "Client/Salesperson Assignments"
+
+        // show gui loading gif...
+        runAsync {
+            initializeData(db)
+        }
 
         with(root) {
             setPrefSize(940.0,610.0)

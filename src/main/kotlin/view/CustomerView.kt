@@ -8,6 +8,7 @@ import com.github.thomasnield.rxkotlinfx.events
 import com.github.thomasnield.rxkotlinfx.onChangedObservable
 import com.github.thomasnield.rxkotlinfx.toMaybe
 import domain.Customer
+import domain.persistence.Persistence
 import io.reactivex.Observable
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.rxkotlin.toObservable
@@ -24,6 +25,8 @@ import tornadofx.*
 class CustomerView : View() {
     private val controller: EventController by inject()
     private var table: TableView<Customer> by singleAssign()
+
+    private val db: Persistence by di()
 
     override val root = borderpane {
         top = label("CUSTOMER").addClass(Styles.heading)
@@ -164,7 +167,7 @@ class CustomerView : View() {
                     .toMaybe().filter { it == ButtonType.YES }
                     .map { deleteItems }
                     .flatMapObservable { it.toObservable() }
-                    .flatMapSingle { it.delete() }
+                    .flatMapSingle { db.deleteCustomer(it.id) }
                     .toSet()
             }.publish() //publish() to prevent multiple subscriptions triggering alert multiple times
 

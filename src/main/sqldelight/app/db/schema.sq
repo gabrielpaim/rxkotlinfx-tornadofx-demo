@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS CustomerEntity(
+    id INTEGER AS Int PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL);
+
+CREATE INDEX customer_name_idx ON CustomerEntity(name);

@@ -5,6 +5,7 @@ import app.toSet
 import com.github.thomasnield.rxkotlinfx.addTo
 import com.github.thomasnield.rxkotlinfx.onChangedObservable
 import com.github.thomasnield.rxkotlinfx.toBinding
+import domain.persistence.Persistence
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
@@ -17,9 +18,9 @@ import org.nield.rxkotlinjdbc.execute
 import org.nield.rxkotlinjdbc.insert
 import org.nield.rxkotlinjdbc.select
 
-class SalesPerson(val id: Int,
-                  val firstName: String,
-                  val lastName: String) {
+data class SalesPerson(val firstName: String,
+                       val lastName: String,
+                       val id: Int? = null) {
 
     //We maintain a collection of bindings and disposables to unsubscribe them later
     private val bindings = CompositeBinding()
@@ -86,16 +87,9 @@ class SalesPerson(val id: Int,
 
     companion object {
 
-        //Retrieves all SalesPerson instances from database
-        val all = db.select("SELECT * FROM SALES_PERSON")
-                .toObservable { SalesPerson(it.getInt("ID"), it.getString("FIRST_NAME"), it.getString("LAST_NAME")) }
-                .flatCollect()
+        val all = db.listAllSalesPersons()
 
-
-        fun forId(id: Int) = db.select("SELECT * FROM SALES_PERSON WHERE ID = ?")
-                .parameter(id)
-                .toObservable { SalesPerson(it.getInt("ID"), it.getString("FIRST_NAME"), it.getString("LAST_NAME")) }
-                .flatCollect()
+        fun forId(id: Int) = db.loadSalesPerson(id)
 
         // Retrieves all assigned CompanyClient ID's for a given SalesPerson
         fun assignmentsFor(salesPersonId: Int) =
@@ -105,12 +99,7 @@ class SalesPerson(val id: Int,
                         .flatCollect()
 
         // Creates a new SalesPerson
-        fun createNew(firstName: String, lastName: String) =
-                db.insert("INSERT INTO SALES_PERSON (FIRST_NAME,LAST_NAME) VALUES (:firstName,:lastName)")
-                        .parameter("firstName", firstName)
-                        .parameter("lastName", lastName)
-                        .toObservable { it.getInt(1) }
-                        .flatCollect()
+        fun createNew(firstName: String, lastName: String) = db.saveSalesPerson(SalesPerson(firstName, lastName))
 
         //commits assignments
         private fun writeAssignment(assignment: Assignment) =

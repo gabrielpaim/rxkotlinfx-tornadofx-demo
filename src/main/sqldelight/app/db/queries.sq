@@ -1,0 +1,17 @@
+insertCustomer:
+INSERT INTO CustomerEntity (name) VALUES (?);
+
+updateCustomer:
+UPDATE CustomerEntity SET name=? WHERE id=?;
+
+deleteCustomer:
+DELETE FROM CustomerEntity WHERE id = ?;
+
+allCustomer:
+SELECT * FROM CustomerEntity;
+
+getCustomer:
+SELECT * FROM CustomerEntity WHERE id = ?;
+
+lastInsertRowId:
+SELECT last_insert_rowid();
