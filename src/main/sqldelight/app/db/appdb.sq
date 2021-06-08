@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS Customer(id INTEGER PRIMARY KEY, name TEXT NOT NULL, last_name TEXT);
+
+CREATE INDEX customer_name_idx ON Customer(name);
+
+saveCustomer:
+INSERT INTO Customer(id, name) VALUES ? ;
+
+deleteCustomer:
+DELETE FROM Customer WHERE id = ?;
+
+allCustomer:
+SELECT * FROM Customer;
+
+getCustomer:
+SELECT * FROM Customer WHERE id = ?;
+

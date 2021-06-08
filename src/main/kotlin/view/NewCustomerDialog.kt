@@ -2,7 +2,6 @@ package view
 
 import domain.Customer
 import io.reactivex.Maybe
-import io.reactivex.Observable
 import javafx.scene.control.ButtonType
 import javafx.scene.control.Dialog
 import javafx.scene.image.ImageView
@@ -19,8 +18,9 @@ class NewCustomerDialog: Dialog<Maybe<Int>>() {
             fieldset("Customer Name") {
                 textfield {
                     setResultConverter {
-                        if (it == ButtonType.OK)
+                        if (it == ButtonType.OK && text.isNotEmpty()){
                             Customer.createNew(text).toMaybe()//returns ID for new Customer
+                        }
                         else
                             Maybe.empty()
                     }

@@ -4,6 +4,8 @@ import io.reactivex.Observable
 import javafx.collections.ObservableList
 import javafx.scene.control.TableView
 import io.reactivex.rxkotlin.toObservable
+import tornadofx.asyncItems
+import java.util.*
 
 /**
  * Workaround for [SQLite locking error](https://github.com/davidmoten/rxjava-jdbc#note-for-sqlite-users).
@@ -28,7 +30,9 @@ fun <T> ObservableList<T>.addIfAbsent(item: T): Boolean {
  * Adds each item to an `Observablelist<T>` if it is not present
  */
 fun <T> ObservableList<T>.addIfAbsent(vararg items: T) {
-    items.forEach { addIfAbsent(it) }
+    for (item in items) {
+        addIfAbsent(item)
+    }
 }
 
 fun <T> ObservableList<T>.moveUp(item: T) {
@@ -47,7 +51,7 @@ fun <T> ObservableList<T>.moveDown(item: T) {
     }
 }
 fun <T> ObservableList<T>.deleteWhere(predicate: (T) -> Boolean) {
-    asSequence().toList().asSequence().filter(predicate).forEach { remove(it) }
+    this.filtered(predicate).forEach { remove(it) }
 }
 
 fun <T> Observable<T>.toSet() = collect({ HashSet<T>() },{ set, t -> set.add(t)}).map { it as Set<T> }

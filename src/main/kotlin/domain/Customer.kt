@@ -14,6 +14,7 @@ class Customer(val id: Int, val name: String) {
             .parameter(id)
             .toSingle()
 
+//    fun delete() = DbTest.db.appdbQueries.deleteCustomer(id.toLong())
 
     companion object {
 
@@ -34,7 +35,8 @@ class Customer(val id: Int, val name: String) {
          * Creates a new `Customer` with the given `name`
          */
         fun createNew(name: String) = db.insert("INSERT INTO CUSTOMER (NAME) VALUES (:name)")
-            .parameter("name",name)
-            .toSingle { it.getInt(1) }
+                .parameter("name",name)
+                .toSingle { it.getInt(1) }
+
     }
 }

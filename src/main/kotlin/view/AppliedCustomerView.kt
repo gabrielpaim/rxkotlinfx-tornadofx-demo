@@ -68,6 +68,9 @@ class AppliedCustomerView : View() {
                                 selectWhere { it.id in selectionModel.selectedItems.asSequence().filterNotNull().map { it.id }.toSet() }
                                 requestFocus()
                                 resizeColumnsToFitContent()
+                            },
+                            onError = {
+                                println("Error--${it.message}")
                             }
                         )
             }
