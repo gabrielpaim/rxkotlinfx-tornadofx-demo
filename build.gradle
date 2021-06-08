@@ -2,6 +2,12 @@ buildscript {
     ext {
         kotlin_version = '1.4.32'
         sqldelight_version = '1.4.4'
+        koin_version = "2.2.2"
+
+        // Others
+        mavenRepoUrl = 'https://nexus.incloud.vet/repository/'
+        mavenUploadUrl = mavenRepoUrl + 'maven-releases'
+        mavenDownloadUrl = mavenRepoUrl + 'maven-public'
     }
 
     repositories {
@@ -18,6 +24,16 @@ buildscript {
 
 repositories {
     mavenCentral()
+    maven {
+        url = mavenDownloadUrl
+        credentials {
+            username = "${nexus_user}"
+            password = "${nexus_password}"
+        }
+    }
+    maven { url = "https://jitpack.io" }
+    maven { url "https://repo1.maven.org/maven2/" }
+    maven { url "https://kotlin.bintray.com/kotlinx" }
 }
 
 apply plugin: 'application'
@@ -29,9 +45,7 @@ mainClassName = 'app.MyApp'
 compileKotlin {
     kotlinOptions.jvmTarget= "1.8"
 }
-compileKotlin {
-    kotlinOptions.jvmTarget= 1.8
-}
+
 sqldelight {
     DatabaseTest { // This will be the name of the generated database class.
         packageName = "app.db"
@@ -57,16 +71,18 @@ dependencies {
     implementation 'org.slf4j:slf4j-simple:1.7.21'
 
     // Koin - di
-    implementation 'io.insert-koin:koin-core:2.2.3'
+    implementation "io.insert-koin:koin-core:$koin_version"
 
-    //RxKotlin and RxKotlinFX dependencies
+    // RxKotlin and RxKotlinFX dependencies
     implementation "io.reactivex.rxjava2:rxjava:2.2.20"
     implementation 'com.github.thomasnield:rxkotlinfx:2.2.2'
     implementation 'io.reactivex.rxjava2:rxkotlin:2.2.0'
 
-    //Testing dependencies
-    testImplementation 'junit:junit:4.12'
-    testImplementation 'io.insert-koin:koin-test:2.2.3'
+    // Testing dependencies
+    testImplementation("org.junit.jupiter:junit-jupiter:5.4.0")
+    testImplementation("io.insert-koin:koin-test:$koin_version") {
+        exclude(group: "junit", module: "junit")
+    }
 }
 
 jar {
@@ -77,4 +93,8 @@ jar {
         )
     }
     from configurations.compile.collect { entry -> zipTree(entry) }
+}
+
+test {
+    useJUnitPlatform()
 }

@@ -5,9 +5,14 @@ import domain.SalesPerson
 import io.reactivex.subjects.BehaviorSubject
 import tornadofx.Controller
 
-class EventController: Controller() {
+class ApplicationController: Controller() {
+
     val searchCustomers = BehaviorSubject.create<Set<Int>>()
-    val searchCustomerUsages = BehaviorSubject.create<Set<Int>>()
+    val searchCustomerUsages = BehaviorSubject.create<Set<Int>>().apply {
+        subscribe {
+            println("searchCustomerUsages emitted: $it")
+        }
+    }
 
     val applyCustomers = BehaviorSubject.create<Set<Int>>()
     val removeCustomerUsages = BehaviorSubject.create<Set<Int>>()
@@ -15,7 +20,11 @@ class EventController: Controller() {
     val refreshSalesPeople = BehaviorSubject.create<Unit>()
     val refreshCustomers = BehaviorSubject.create<Unit>()
 
-    val selectedCustomers = BehaviorSubject.create<Set<Customer>>()
+    val selectedCustomers = BehaviorSubject.create<Set<Customer>>().apply {
+        subscribe {
+            println("selectedCustomers emitted: $it")
+        }
+    }
     val selectedSalesPeople = BehaviorSubject.create<Set<SalesPerson>>()
     val selectedApplications = BehaviorSubject.create<Set<Int>>()
 
@@ -30,4 +39,16 @@ class EventController: Controller() {
 
     val createNewSalesPerson = BehaviorSubject.create<Unit>()
     val deleteSalesPerson = BehaviorSubject.create<Set<Int>>()
+
+    fun searchSelectedCustomers(customers: List<Customer>) {
+        searchCustomerUsages.onNext(customers.mapNotNull { it.id }.toSet())
+    }
+
+    fun applyCustomers(customers: List<Customer>) {
+        applyCustomers.onNext(customers.mapNotNull { it.id }.toSet())
+    }
+
+    fun removeCustomerUsages(customers: List<Customer>) {
+        removeCustomerUsages.onNext(customers.mapNotNull { it.id }.toSet())
+    }
 }

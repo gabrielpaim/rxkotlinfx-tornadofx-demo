@@ -1,6 +1,7 @@
 package view
 
 import domain.SalesPerson
+import io.reactivex.Maybe
 import io.reactivex.Observable
 import javafx.scene.control.ButtonType
 import javafx.scene.control.Dialog
@@ -10,7 +11,7 @@ import javafx.scene.image.ImageView
 import javafx.stage.Stage
 import tornadofx.*
 
-class NewSalesPersonDialog: Dialog<Observable<Int>>() {
+class NewSalesPersonDialog: Dialog<Maybe<SalesPerson>>() {
     private val root = Form()
     private var first: TextField by singleAssign()
     private var last: TextField by singleAssign()
@@ -32,9 +33,9 @@ class NewSalesPersonDialog: Dialog<Observable<Int>>() {
 
         setResultConverter {
             if (it == ButtonType.OK)
-                SalesPerson.createNew(first.text,last.text) //returns ID for new Customer
+                SalesPerson.createNew(first.text,last.text).toMaybe()
             else
-                Observable.empty()
+                Maybe.empty()
         }
 
         dialogPane.content = root

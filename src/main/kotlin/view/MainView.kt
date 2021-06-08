@@ -14,7 +14,7 @@ class MainView : View() {
     private val companyClientView: CustomerView by inject()
     private val appliedCustomerView: AppliedCustomerView by inject()
 
-    private val controller: EventController by inject()
+    private val controller: ApplicationController by inject()
     private val db: Persistence by di()
 
     init {

@@ -17,7 +17,7 @@ import org.controlsfx.glyphfont.GlyphFontRegistry
 import tornadofx.*
 
 class SalesPeopleView: View() {
-    private val controller: EventController by inject()
+    private val controller: ApplicationController by inject()
     private var table: TableView<SalesPerson> by singleAssign()
 
     private val fontAwesome = GlyphFontRegistry.font("FontAwesome")

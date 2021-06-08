@@ -1,5 +1,6 @@
 package domain.persistence
 
+import domain.Assignment
 import domain.Customer
 import domain.SalesPerson
 import io.reactivex.Maybe
@@ -28,5 +29,11 @@ interface Persistence {
     fun loadSalesPerson(id: Int): Maybe<SalesPerson>
 
     fun listAllSalesPersons(): Observable<SalesPerson>
+
+    fun listAllAssignmentsForSalesPerson(salesPersonId: Int): Observable<Assignment>
+
+    fun saveAssignment(assignment: Assignment): Single<Assignment>
+
+    fun deleteAssignment(assignmentId: Int): Single<Int>
 
 }

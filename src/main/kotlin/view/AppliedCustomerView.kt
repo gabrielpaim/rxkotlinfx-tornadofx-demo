@@ -4,10 +4,8 @@ import app.Styles
 import com.github.thomasnield.rxkotlinfx.actionEvents
 import com.github.thomasnield.rxkotlinfx.events
 import com.github.thomasnield.rxkotlinfx.onChangedObservable
-import com.github.thomasnield.rxkotlinfx.toBinding
 import domain.Customer
 import io.reactivex.Observable
-import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.rxkotlin.toObservable
 import javafx.geometry.Orientation
 import javafx.scene.control.TableView
@@ -19,7 +17,7 @@ import tornadofx.*
 class AppliedCustomerView : View() {
     override val root = BorderPane()
 
-    private val controller: EventController by inject()
+    private val controller: ApplicationController by inject()
     private var table: TableView<Customer> by singleAssign()
 
     init {

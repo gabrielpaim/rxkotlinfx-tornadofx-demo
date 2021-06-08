@@ -8,7 +8,7 @@ import javafx.scene.image.ImageView
 import javafx.stage.Stage
 import tornadofx.*
 
-class NewCustomerDialog: Dialog<Maybe<Int>>() {
+class NewCustomerDialog: Dialog<Maybe<Customer>>() {
     private val root = Form()
 
     init {
@@ -18,11 +18,11 @@ class NewCustomerDialog: Dialog<Maybe<Int>>() {
             fieldset("Customer Name") {
                 textfield {
                     setResultConverter {
-                        if (it == ButtonType.OK && text.isNotEmpty()){
-                            Customer.createNew(text).toMaybe()//returns ID for new Customer
-                        }
-                        else
+                        if (it == ButtonType.OK && text.isNotEmpty()) {
+                            Customer.createNew(text).toMaybe()
+                        } else {
                             Maybe.empty()
+                        }
                     }
                 }
             }

@@ -51,7 +51,7 @@ data class SalesPerson(val firstName: String,
 
 
     //Compares original and new Customer ID assignments and writes them to database
-    fun saveAssignments(): Single<Long>? {
+    fun saveAssignments(): Single<Long> {
 
         val newItems = customerAssignments.toObservable()
                 .zipWith(Observable.range(1,Int.MAX_VALUE))
@@ -71,9 +71,13 @@ data class SalesPerson(val firstName: String,
             }.count()
     }
 
-    fun delete() = db.execute("DELETE FROM SALES_PERSON WHERE ID = ?")
-        .parameter(id)
-        .toSingle()
+    fun delete(): Single<Int> {
+        return if (id == null) {
+            Single.error(IllegalArgumentException("User is not saved"))
+        } else {
+            db.deleteSalesPerson(id)
+        }
+    }
 
 
     /**Releases any reactive disposables associated with this SalesPerson.
@@ -91,28 +95,12 @@ data class SalesPerson(val firstName: String,
 
         fun forId(id: Int) = db.loadSalesPerson(id)
 
-        // Retrieves all assigned CompanyClient ID's for a given SalesPerson
-        fun assignmentsFor(salesPersonId: Int) =
-                db.select("SELECT * FROM ASSIGNMENT WHERE SALES_PERSON_ID = :salesPersonId ORDER BY APPLY_ORDER")
-                        .parameter("salesPersonId", salesPersonId)
-                        .toObservable { Assignment(it.getInt("ID"), it.getInt("SALES_PERSON_ID"), it.getInt("CUSTOMER_ID"), it.getInt("APPLY_ORDER")) }
-                        .flatCollect()
+        fun assignmentsFor(salesPersonId: Int) = db.listAllAssignmentsForSalesPerson(salesPersonId)
 
-        // Creates a new SalesPerson
         fun createNew(firstName: String, lastName: String) = db.saveSalesPerson(SalesPerson(firstName, lastName))
 
-        //commits assignments
-        private fun writeAssignment(assignment: Assignment) =
-                db.insert("INSERT INTO ASSIGNMENT (SALES_PERSON_ID, CUSTOMER_ID, APPLY_ORDER) VALUES (:salesPersonId, :customerId, :applyOrder)")
-                        .parameter("salesPersonId", assignment.salesPersonId)
-                        .parameter("customerId", assignment.customerId)
-                        .parameter("applyOrder", assignment.order)
-                        .toSingle { it.getInt(1) }
+        private fun writeAssignment(assignment: Assignment) = db.saveAssignment(assignment)
 
-        //deletes assignments
-        private fun removeAssignment(assignmentId: Int) =
-                db.execute("DELETE FROM ASSIGNMENT WHERE ID = :id")
-                        .parameter("id",assignmentId)
-                        .toSingle()
+        private fun removeAssignment(assignmentId: Int) = db.deleteAssignment(assignmentId)
     }
 }

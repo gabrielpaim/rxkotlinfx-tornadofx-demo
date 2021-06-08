@@ -64,13 +64,20 @@ class RxjavaJdbcPersistence(private val db: Connection): Persistence {
     }
 
     override fun deleteSalesPerson(id: Int): Single<Int> {
-        TODO("Not yet implemented")
+       return db
+           .execute("DELETE FROM SALES_PERSON WHERE ID = ?")
+           .parameter(id)
+           .toSingle()
     }
 
     override fun saveSalesPerson(salesPerson: SalesPerson): Single<SalesPerson> {
         return if (salesPerson.id != null && loadSalesPerson(salesPerson.id).blockingGet() != null) {
-            // TODO update
-            Single.error(IllegalStateException("TODO"))
+                return db.insert("UPDATE SALES_PERSON (FIRST_NAME, LAST_NAME) VALUES (:first_name, :last_name)")
+                    .parameter("first_name", salesPerson.firstName)
+                    .parameter("last_name", salesPerson.lastName)
+                    .toSingle {
+                        salesPerson
+                    }
         } else {
             db.insert("INSERT INTO SALES_PERSON (FIRST_NAME,LAST_NAME) VALUES (:firstName,:lastName)")
                 .parameter("firstName", salesPerson.firstName)
@@ -96,29 +103,44 @@ class RxjavaJdbcPersistence(private val db: Connection): Persistence {
             .flatCollect()
     }
 
-
-    // Retrieves all assigned CompanyClient ID's for a given SalesPerson
-    fun assignmentsFor(salesPersonId: Int) =
-        db.select("SELECT * FROM ASSIGNMENT WHERE SALES_PERSON_ID = :salesPersonId ORDER BY APPLY_ORDER")
+    override fun listAllAssignmentsForSalesPerson(salesPersonId: Int): Observable<Assignment> {
+        return db.select("SELECT * FROM ASSIGNMENT WHERE SALES_PERSON_ID = :salesPersonId ORDER BY APPLY_ORDER")
             .parameter("salesPersonId", salesPersonId)
-            .toObservable { Assignment(it.getInt("ID"), it.getInt("SALES_PERSON_ID"), it.getInt("CUSTOMER_ID"), it.getInt("APPLY_ORDER")) }
+            .toObservable {
+                Assignment(it.getInt("ID"), it.getInt("SALES_PERSON_ID"), it.getInt("CUSTOMER_ID"), it.getInt("APPLY_ORDER"))
+            }
             .flatCollect()
+    }
 
-    // Creates a new SalesPerson
-
-    //commits assignments
-    private fun writeAssignment(assignment: Assignment) =
-        db.insert("INSERT INTO ASSIGNMENT (SALES_PERSON_ID, CUSTOMER_ID, APPLY_ORDER) VALUES (:salesPersonId, :customerId, :applyOrder)")
+    override fun saveAssignment(assignment: Assignment): Single<Assignment> {
+       return db.insert("INSERT INTO ASSIGNMENT (SALES_PERSON_ID, CUSTOMER_ID, APPLY_ORDER) VALUES (:salesPersonId, :customerId, :applyOrder)")
             .parameter("salesPersonId", assignment.salesPersonId)
             .parameter("customerId", assignment.customerId)
             .parameter("applyOrder", assignment.order)
-            .toSingle { it.getInt(1) }
+            .toSingle {
+                assignment.copy(id = it.getInt("ID"))
+            }
+    }
 
-    //deletes assignments
-    private fun removeAssignment(assignmentId: Int) =
-        db.execute("DELETE FROM ASSIGNMENT WHERE ID = :id")
+    //commits assignments
+//    private fun writeAssignment(assignment: Assignment) =
+//        db.insert("INSERT INTO ASSIGNMENT (SALES_PERSON_ID, CUSTOMER_ID, APPLY_ORDER) VALUES (:salesPersonId, :customerId, :applyOrder)")
+//            .parameter("salesPersonId", assignment.salesPersonId)
+//            .parameter("customerId", assignment.customerId)
+//            .parameter("applyOrder", assignment.order)
+//            .toSingle { it.getInt(1) }
+
+    override fun deleteAssignment(assignmentId: Int): Single<Int> {
+       return db.execute("DELETE FROM ASSIGNMENT WHERE ID = :id")
             .parameter("id",assignmentId)
             .toSingle()
+    }
+
+    //deletes assignments
+//    private fun removeAssignment(assignmentId: Int) =
+//        db.execute("DELETE FROM ASSIGNMENT WHERE ID = :id")
+//            .parameter("id",assignmentId)
+//            .toSingle()
 
 
     companion object {
