@@ -42,9 +42,11 @@ apply plugin: 'com.squareup.sqldelight'
 
 mainClassName = 'app.MyApp'
 
-compileKotlin {
-    kotlinOptions.jvmTarget= "1.8"
-}
+compileJava.options.encoding = "UTF-8"
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
+compileKotlin.kotlinOptions.jvmTarget = "1.8"
+compileTestKotlin.kotlinOptions.jvmTarget = "1.8"
 
 sqldelight {
     DatabaseTest { // This will be the name of the generated database class.

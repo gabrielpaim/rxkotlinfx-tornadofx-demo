@@ -14,16 +14,24 @@ class PersistenceTest: ClosingKoinTest {
         startKoin {
             modules(mainModule)
         }
+        db = get()
     }
+    private lateinit var db: Persistence
+
 
     @Test
     fun `database should be initialized with data`() {
-        val db: Persistence = get()
-        initializeData(db) // reactive?
+        initializeData(db)
+            .test()
+            .await()
+            .assertNoErrors()
+
         db
             .listAllCustomers()
             .test()
             .assertValueCount(8)
+
+        db.loadSalesPerson(1).test().assertValue { it.firstName == "Joe" }
     }
 
 }

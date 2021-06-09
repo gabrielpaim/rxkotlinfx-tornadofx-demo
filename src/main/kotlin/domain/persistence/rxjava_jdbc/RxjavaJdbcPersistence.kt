@@ -29,9 +29,7 @@ class RxjavaJdbcPersistence(private val db: Connection): Persistence {
             return db
                 .insert("INSERT INTO CUSTOMER (NAME) VALUES (:name)")
                 .parameter("name",customer.name)
-                .toSingle {
-                    customer.copy(id = it.getInt("ID"))
-                }
+                .toSingle { customer.copy(id = it.getInt(1)) }
         }
 
         fun update(): Single<Customer> {
@@ -64,26 +62,26 @@ class RxjavaJdbcPersistence(private val db: Connection): Persistence {
     }
 
     override fun deleteSalesPerson(id: Int): Single<Int> {
-       return db
-           .execute("DELETE FROM SALES_PERSON WHERE ID = ?")
-           .parameter(id)
-           .toSingle()
+        return db
+            .execute("DELETE FROM SALES_PERSON WHERE ID = ?")
+            .parameter(id)
+            .toSingle()
     }
 
     override fun saveSalesPerson(salesPerson: SalesPerson): Single<SalesPerson> {
         return if (salesPerson.id != null && loadSalesPerson(salesPerson.id).blockingGet() != null) {
-                return db.insert("UPDATE SALES_PERSON (FIRST_NAME, LAST_NAME) VALUES (:first_name, :last_name)")
-                    .parameter("first_name", salesPerson.firstName)
-                    .parameter("last_name", salesPerson.lastName)
-                    .toSingle {
-                        salesPerson
-                    }
+            return db.insert("UPDATE SALES_PERSON (FIRST_NAME, LAST_NAME) VALUES (:first_name, :last_name)")
+                .parameter("first_name", salesPerson.firstName)
+                .parameter("last_name", salesPerson.lastName)
+                .toSingle {
+                    salesPerson
+                }
         } else {
             db.insert("INSERT INTO SALES_PERSON (FIRST_NAME,LAST_NAME) VALUES (:firstName,:lastName)")
                 .parameter("firstName", salesPerson.firstName)
                 .parameter("lastName", salesPerson.lastName)
                 .toSingle {
-                    val id = it.getInt("ID")
+                    val id = it.getInt(1)
                     salesPerson.copy(id=id)
                 }
         }
@@ -113,7 +111,7 @@ class RxjavaJdbcPersistence(private val db: Connection): Persistence {
     }
 
     override fun saveAssignment(assignment: Assignment): Single<Assignment> {
-       return db.insert("INSERT INTO ASSIGNMENT (SALES_PERSON_ID, CUSTOMER_ID, APPLY_ORDER) VALUES (:salesPersonId, :customerId, :applyOrder)")
+        return db.insert("INSERT INTO ASSIGNMENT (SALES_PERSON_ID, CUSTOMER_ID, APPLY_ORDER) VALUES (:salesPersonId, :customerId, :applyOrder)")
             .parameter("salesPersonId", assignment.salesPersonId)
             .parameter("customerId", assignment.customerId)
             .parameter("applyOrder", assignment.order)
@@ -123,36 +121,26 @@ class RxjavaJdbcPersistence(private val db: Connection): Persistence {
     }
 
     override fun deleteAssignment(assignmentId: Int): Single<Int> {
-       return db.execute("DELETE FROM ASSIGNMENT WHERE ID = :id")
+        return db.execute("DELETE FROM ASSIGNMENT WHERE ID = :id")
             .parameter("id",assignmentId)
             .toSingle()
     }
 
     companion object {
         fun create(url: String): RxjavaJdbcPersistence {
+
             val connection = DriverManager.getConnection(url).apply {
 
                 // Create Tables
                 javaClass.getResourceAsStream("/jdbc/schema-db.sql")?.let { stream ->
                     stream.bufferedReader().useLines { lines ->
-                        lines.forEach {
-                            execute(it).toSingle().blockingGet()
-                        }
+                        lines
+                            .filterNot { it.isBlank() }
+                            .forEach {
+                                execute(it).toSingle().blockingGet()
+                            }
                     }
                 }
-
-//                execute("CREATE TABLE CUSTOMER (ID INTEGER PRIMARY KEY, NAME VARCHAR)")
-//                    .toSingle()
-//                    .blockingGet()
-//
-//                execute("CREATE TABLE SALES_PERSON (ID INTEGER PRIMARY KEY, FIRST_NAME VARCHAR, LAST_NAME VARCHAR)")
-//                    .toSingle()
-//                    .blockingGet()
-//
-//                execute("CREATE TABLE ASSIGNMENT (ID INTEGER PRIMARY KEY, " +
-//                        "CUSTOMER_ID INTEGER, SALES_PERSON_ID INTEGER, APPLY_ORDER INTEGER)")
-//                    .toSingle()
-//                    .blockingGet()
             }
 
             return RxjavaJdbcPersistence(connection)

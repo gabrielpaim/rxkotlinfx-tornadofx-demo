@@ -9,7 +9,9 @@ import com.github.thomasnield.rxkotlinfx.onChangedObservable
 import com.github.thomasnield.rxkotlinfx.toMaybe
 import domain.Customer
 import domain.persistence.Persistence
+import io.reactivex.Maybe
 import io.reactivex.Observable
+import io.reactivex.Single
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.rxkotlin.toObservable
 import javafx.collections.ObservableList
@@ -175,13 +177,18 @@ class CustomerView : View() {
                 useMaxWidth = true
                 textFill = Color.RED
 
-                actionEvents().map {
-                    table.selectionModel.selectedItems
-                        .asSequence()
-                        .filterNotNull()
-                        .map { it.id }
-                        .toSet()
-                }.subscribe(controller.deleteCustomers)
+
+                actionEvents()
+                    .map {
+                        table
+                            .selectionModel
+                            .selectedItems
+                            .asSequence()
+                            .map { it.id }
+                            .filterNotNull()
+                            .toSet()
+                    }
+                    .subscribe(controller.deleteCustomers)
             }
         }
 
@@ -190,8 +197,9 @@ class CustomerView : View() {
             .flatMapMaybe { NewCustomerDialog().toMaybe() }
             .flatMapMaybe { it }
             .flatMapSingle {
-                db.loadCustomer(it)
-//                Customer.forId(it)
+                db
+                    .loadCustomer(it.id)
+                    .toSingle()
             }
             .subscribe {
                 table.items.add(it)
@@ -211,7 +219,13 @@ class CustomerView : View() {
                     .filter { it == ButtonType.YES }
                     .map { deleteItems }
                     .flatMapObservable { it.toObservable() }
-                    .flatMapSingle { db.deleteCustomer(it.id) }
+                    .flatMapSingle {
+                        if (it.id != null) {
+                            db.deleteCustomer(it.id)
+                        } else {
+                            Maybe.empty<Int>().toSingle()
+                        }
+                    }
                     .toSet()
             }
             .publish() //publish() to prevent multiple subscriptions triggering alert multiple times

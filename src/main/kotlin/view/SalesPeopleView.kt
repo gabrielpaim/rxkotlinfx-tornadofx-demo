@@ -1,11 +1,11 @@
 package view
 
 import app.*
-import com.github.thomasnield.rxkotlinfx.actionEvents
-import com.github.thomasnield.rxkotlinfx.onChangedObservable
-import com.github.thomasnield.rxkotlinfx.toMaybe
+import com.github.thomasnield.rxkotlinfx.*
 import domain.SalesPerson
 import domain.persistence.Persistence
+import io.reactivex.Maybe
+import io.reactivex.Single
 import io.reactivex.rxkotlin.toObservable
 import javafx.geometry.Orientation
 import javafx.scene.control.Alert
@@ -13,6 +13,7 @@ import javafx.scene.control.ButtonType
 import javafx.scene.control.SelectionMode
 import javafx.scene.control.TableView
 import javafx.scene.paint.Color
+import javafx.scene.text.Text
 import org.controlsfx.glyphfont.FontAwesome
 import org.controlsfx.glyphfont.GlyphFontRegistry
 import tornadofx.*
@@ -39,16 +40,16 @@ class SalesPeopleView: View() {
             button("",saveGlyph) {
                 useMaxWidth = true
                 actionEvents()
-                        .map { Unit }
-                        .subscribe(controller.saveAssignments)
+                    .map { Unit }
+                    .subscribe(controller.saveAssignments)
             }
 
             //refresh button
             button("",refreshGlyph) {
                 useMaxWidth = true
                 actionEvents()
-                        .map { Unit }
-                        .subscribe(controller.refreshSalesPeople)
+                    .map { Unit }
+                    .subscribe(controller.refreshSalesPeople)
             }
 
             //add button
@@ -56,19 +57,32 @@ class SalesPeopleView: View() {
                 tooltip("Create a new Sales Person")
                 useMaxWidth = true
                 actionEvents()
-                        .map { Unit }
-                        .subscribe(controller.createNewSalesPerson)
+                    .map { Unit }
+                    .subscribe(controller.createNewSalesPerson)
             }
 
             //remove customer button
             button("",removeGlyph) {
                 tooltip("Remove selected Customers")
                 useMaxWidth = true
-                actionEvents().flatMapSingle {
-                    table.selectionModel.selectedItems.toObservable()
-                            .map { it.id }
+               val a= actionEvents()
+                    .flatMapSingle {
+
+                        // TODO verificar
+
+                        table.selectionModel.selectedItems
+                            .mapNotNull { it.id }
+                            .toObservable()
                             .toSet()
-                }.subscribe(controller.deleteSalesPerson)
+
+//                            .toObservable()
+//                            .map { it.id }
+//                            .flatMapMaybe {
+//                                Maybe.just(it)
+//                            }
+//                            .toSet()
+                    }
+                    .subscribe(controller.deleteSalesPerson)
             }
         }
 
@@ -79,62 +93,87 @@ class SalesPeopleView: View() {
             readonlyColumn("ID",SalesPerson::id)
             readonlyColumn("First Name",SalesPerson::firstName)
             readonlyColumn("Last Name",SalesPerson::lastName)
-            column("Assigned Clients",SalesPerson::customerAssignmentsConcat)
+
+//            column("Assigned Clients", SalesPerson::customerAssignmentsConcat) {
+//                this.
+//            }
+
+            column("Assigned Clients", SalesPerson::customerAssignmentsConcat)
+            // TODO
 
             selectionModel.selectionMode = SelectionMode.MULTIPLE
 
             //broadcast selections
             selectionModel.selectedItems.onChangedObservable()
-                    .map { it.asSequence().filterNotNull().toSet() }
-                    .subscribe(controller.selectedSalesPeople)
+                .map { it.asSequence().filterNotNull().toSet() }
+                .subscribe(controller.selectedSalesPeople)
 
             //handle search requests
             controller.searchCustomerUsages.subscribe { ids ->
-                    moveToTopWhere { it.customerAssignments.any { it in ids } }
-                    requestFocus()
-                }
+                moveToTopWhere { it.customerAssignments.any { it in ids } }
+                requestFocus()
+            }
 
             //handle adds
             controller.applyCustomers.subscribe { ids ->
-                    selectionModel.selectedItems.asSequence().filterNotNull().forEach {
-                        it.customerAssignments.addIfAbsent(*ids.toTypedArray())
-                    }
+                selectionModel.selectedItems.asSequence().filterNotNull().forEach {
+                    it.customerAssignments.addIfAbsent(*ids.toTypedArray())
+                }
             }
 
             //handle removals
             controller.removeCustomerUsages.subscribe { ids ->
-                    selectionModel.selectedItems.asSequence().filterNotNull().forEach {
-                        it.customerAssignments.removeAll(ids)
-                    }
+                selectionModel.selectedItems.asSequence().filterNotNull().forEach {
+                    it.customerAssignments.removeAll(ids)
+                }
             }
 
-            //handle commits
-            controller.saveAssignments.flatMapMaybe {
-                items.toObservable().flatMapSingle { it.saveAssignments() }
-                        .reduce { x,y -> x + y}
-                        .doOnSuccess { println("Committed $it changes") }
-            }.map { Unit }
-             .subscribe(controller.refreshSalesPeople)
+            // ------------ handle commits ---------------
+            // Forma 1
+            controller
+                .saveAssignments
+                .flatMap {
+                    items
+                        .toObservable()
+                        .flatMapSingle {
+                            it.saveAssignments().map { }
+                        }
+                }
+                .subscribe(controller.refreshSalesPeople)
+
+            // Forma 2
+//            controller
+//                .saveAssignments
+//                .flatMapMaybe {
+//                    items
+//                        .toObservable()
+//                        .flatMapMaybe { it.saveAssignments().toMaybe() }
+//                        .reduce { x,y -> x + y}
+//                        .doOnSuccess { println("Committed $it changes") }
+//                }
+//                .map { }
+//                .subscribe(controller.refreshSalesPeople)
+            // ----------------------------------------------------
 
             //handle refresh events and import data
             controller.refreshSalesPeople
-                    .doOnNext { items.forEach { it.dispose() } } //important to kill subscriptions on each SalesPerson
-                    .startWith(Unit)
-                    .flatMapSingle {
-                        db.listAllSalesPersons().toList()
-                    }.subscribe { items.setAll(it) }
+                .doOnNext { items.forEach { it.dispose() } } //important to kill subscriptions on each SalesPerson
+                .startWith(Unit)
+                .flatMapSingle {
+                    db.listAllSalesPersons().toList()
+                }.subscribe { items.setAll(it) }
 
             //handle move up and move down requests
             controller.moveCustomerUp
-                    .map { it to selectedItem?.customerAssignments }
-                    .filter { it.second != null }
-                    .subscribe { it.second!!.moveUp(it.first) }
+                .map { it to selectedItem?.customerAssignments }
+                .filter { it.second != null }
+                .subscribe { it.second!!.moveUp(it.first) }
 
             //handle move up and move down requests
             controller.moveCustomerDown
-                    .map { it to selectedItem?.customerAssignments }
-                    .filter { it.second != null }
-                    .subscribe { it.second!!.moveDown(it.first) }
+                .map { it to selectedItem?.customerAssignments }
+                .filter { it.second != null }
+                .subscribe { it.second!!.moveDown(it.first) }
         }
     }
     init {
@@ -144,20 +183,26 @@ class SalesPeopleView: View() {
         }.subscribe()
 
         //handle new Sales Person request
-        controller.createNewSalesPerson.flatMap {
-            NewSalesPersonDialog().toMaybe()
-                    .flatMapObservable { it }
-                    .flatMap {
-
-                        db.loadSalesPerson(it)
-//                        SalesPerson.forId(it)
+        controller.createNewSalesPerson
+            .flatMap {
+                NewSalesPersonDialog()
+                    .toMaybe()
+                    .toObservable()
+                    .flatMap { it.toObservable() }
+                    .flatMapMaybe {
+                        if(it.id != null) {
+                            db.loadSalesPerson(it.id)
+                        } else {
+                            Maybe.empty()
+                        }
                     }
-        }.subscribe {
-            table.selectionModel.clearSelection()
-            table.items.add(it)
-            table.selectionModel.select(it)
-            table.requestFocus()
-        }
+            }
+            .subscribe {
+                table.selectionModel.clearSelection()
+                table.items.add(it)
+                table.selectionModel.select(it)
+                table.requestFocus()
+            }
 
         //handle sales person deletions
         controller.deleteSalesPerson.flatMapSingle {
@@ -165,7 +210,14 @@ class SalesPeopleView: View() {
                 Alert(Alert.AlertType.WARNING, "Are you sure you want to delete these ${deleteItems.size} sales people?", ButtonType.YES, ButtonType.NO).toMaybe()
                     .filter { it == ButtonType.YES }
                     .flatMapObservable {  deleteItems.toObservable() }
-                    .flatMapSingle { it.delete() }
+                    .flatMapSingle {
+                        if (it.id != null) {
+                            db.deleteSalesPerson(it.id)
+                        } else {
+                            Maybe.empty<Int>().toSingle()
+                        }
+
+                    }
                     .toSet()
             }
         }.subscribe { deletedIds ->
