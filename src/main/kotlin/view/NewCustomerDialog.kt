@@ -1,15 +1,20 @@
 package view
 
 import domain.Customer
+import domain.persistence.Persistence
 import io.reactivex.Maybe
 import javafx.scene.control.ButtonType
 import javafx.scene.control.Dialog
 import javafx.scene.image.ImageView
 import javafx.stage.Stage
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import tornadofx.*
 
-class NewCustomerDialog: Dialog<Maybe<Customer>>() {
+class NewCustomerDialog: Dialog<Maybe<Customer>>(), KoinComponent {
     private val root = Form()
+
+    val db: Persistence by inject()
 
     init {
         title = "Create New Customer"
@@ -19,7 +24,7 @@ class NewCustomerDialog: Dialog<Maybe<Customer>>() {
                 textfield {
                     setResultConverter {
                         if (it == ButtonType.OK && text.isNotEmpty()) {
-                            Customer.createNew(text).toMaybe()
+                            db.saveCustomer(Customer(text)).toMaybe()
                         } else {
                             Maybe.empty()
                         }

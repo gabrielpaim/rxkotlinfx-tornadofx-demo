@@ -2,7 +2,7 @@ buildscript {
     ext {
         kotlin_version = '1.4.32'
         sqldelight_version = '1.4.4'
-        koin_version = "2.2.2"
+        koin_version = "2.2.3"
 
         // Others
         mavenRepoUrl = 'https://nexus.incloud.vet/repository/'

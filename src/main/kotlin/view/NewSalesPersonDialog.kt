@@ -1,20 +1,24 @@
 package view
 
 import domain.SalesPerson
+import domain.persistence.Persistence
 import io.reactivex.Maybe
-import io.reactivex.Observable
 import javafx.scene.control.ButtonType
 import javafx.scene.control.Dialog
 import javafx.scene.control.TextField
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.stage.Stage
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import tornadofx.*
 
-class NewSalesPersonDialog: Dialog<Maybe<SalesPerson>>() {
+class NewSalesPersonDialog: Dialog<Maybe<SalesPerson>>(), KoinComponent {
     private val root = Form()
     private var first: TextField by singleAssign()
     private var last: TextField by singleAssign()
+
+    private val db: Persistence by inject()
 
     init {
         title = "Create New Sales Person"
@@ -27,13 +31,12 @@ class NewSalesPersonDialog: Dialog<Maybe<SalesPerson>>() {
                 field("Last") {
                     last = textfield()
                 }
-
             }
         }
 
         setResultConverter {
             if (it == ButtonType.OK)
-                SalesPerson.createNew(first.text,last.text).toMaybe()
+                db.saveSalesPerson(SalesPerson(first.text, last.text)).toMaybe()
             else
                 Maybe.empty()
         }

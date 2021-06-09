@@ -5,6 +5,7 @@ import com.github.thomasnield.rxkotlinfx.actionEvents
 import com.github.thomasnield.rxkotlinfx.onChangedObservable
 import com.github.thomasnield.rxkotlinfx.toMaybe
 import domain.SalesPerson
+import domain.persistence.Persistence
 import io.reactivex.rxkotlin.toObservable
 import javafx.geometry.Orientation
 import javafx.scene.control.Alert
@@ -25,6 +26,8 @@ class SalesPeopleView: View() {
     private val refreshGlyph = fontAwesome.create(FontAwesome.Glyph.UNDO).color(Color.PURPLE)
     private val addGlyph = fontAwesome.create(FontAwesome.Glyph.PLUS).color(Color.BLUE)
     private val removeGlyph = fontAwesome.create(FontAwesome.Glyph.TIMES).color(Color.RED)
+
+    private val db: Persistence by di()
 
     override val root = borderpane {
 
@@ -118,7 +121,7 @@ class SalesPeopleView: View() {
                     .doOnNext { items.forEach { it.dispose() } } //important to kill subscriptions on each SalesPerson
                     .startWith(Unit)
                     .flatMapSingle {
-                        SalesPerson.all.toList()
+                        db.listAllSalesPersons().toList()
                     }.subscribe { items.setAll(it) }
 
             //handle move up and move down requests
@@ -144,7 +147,11 @@ class SalesPeopleView: View() {
         controller.createNewSalesPerson.flatMap {
             NewSalesPersonDialog().toMaybe()
                     .flatMapObservable { it }
-                    .flatMap { SalesPerson.forId(it) }
+                    .flatMap {
+
+                        db.loadSalesPerson(it)
+//                        SalesPerson.forId(it)
+                    }
         }.subscribe {
             table.selectionModel.clearSelection()
             table.items.add(it)

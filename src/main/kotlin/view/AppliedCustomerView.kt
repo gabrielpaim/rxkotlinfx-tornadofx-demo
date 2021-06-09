@@ -5,6 +5,7 @@ import com.github.thomasnield.rxkotlinfx.actionEvents
 import com.github.thomasnield.rxkotlinfx.events
 import com.github.thomasnield.rxkotlinfx.onChangedObservable
 import domain.Customer
+import domain.persistence.Persistence
 import io.reactivex.Observable
 import io.reactivex.rxkotlin.toObservable
 import javafx.geometry.Orientation
@@ -19,6 +20,8 @@ class AppliedCustomerView : View() {
 
     private val controller: ApplicationController by inject()
     private var table: TableView<Customer> by singleAssign()
+
+    private val db: Persistence by di()
 
     init {
         with(root) {
@@ -49,14 +52,20 @@ class AppliedCustomerView : View() {
                             selectedPeople.toObservable().flatMap {
                                 it.customerAssignments.onChangedObservable()
                                     .switchMapSingle {
-                                        it.toObservable().flatMapSingle { Customer.forId(it) }.toList()
+                                        it.toObservable().flatMapSingle {
+                                            db.loadCustomer(it)
+//                                            Customer.forId(it)
+                                        }.toList()
                                     }
                             }
                         } else {
                             selectedPeople.toObservable()
                                     .flatMap { it.customerAssignments.toObservable() }
                                     .distinct()
-                                    .flatMapSingle { Customer.forId(it) }
+                                    .flatMapSingle {
+                                        db.loadCustomer(it)
+//                                        Customer.forId(it)
+                                    }
                                     .toSortedList { x,y -> x.id.compareTo(y.id) }
                                     .toObservable()
                         }

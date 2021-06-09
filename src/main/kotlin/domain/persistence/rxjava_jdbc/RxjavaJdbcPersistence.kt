@@ -122,30 +122,16 @@ class RxjavaJdbcPersistence(private val db: Connection): Persistence {
             }
     }
 
-    //commits assignments
-//    private fun writeAssignment(assignment: Assignment) =
-//        db.insert("INSERT INTO ASSIGNMENT (SALES_PERSON_ID, CUSTOMER_ID, APPLY_ORDER) VALUES (:salesPersonId, :customerId, :applyOrder)")
-//            .parameter("salesPersonId", assignment.salesPersonId)
-//            .parameter("customerId", assignment.customerId)
-//            .parameter("applyOrder", assignment.order)
-//            .toSingle { it.getInt(1) }
-
     override fun deleteAssignment(assignmentId: Int): Single<Int> {
        return db.execute("DELETE FROM ASSIGNMENT WHERE ID = :id")
             .parameter("id",assignmentId)
             .toSingle()
     }
 
-    //deletes assignments
-//    private fun removeAssignment(assignmentId: Int) =
-//        db.execute("DELETE FROM ASSIGNMENT WHERE ID = :id")
-//            .parameter("id",assignmentId)
-//            .toSingle()
-
-
     companion object {
         fun create(url: String): RxjavaJdbcPersistence {
             val connection = DriverManager.getConnection(url).apply {
+
                 // Create Tables
                 javaClass.getResourceAsStream("/jdbc/schema-db.sql")?.let { stream ->
                     stream.bufferedReader().useLines { lines ->

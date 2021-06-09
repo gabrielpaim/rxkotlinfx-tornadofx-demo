@@ -53,7 +53,7 @@ class CustomerView : View() {
             //Import data and refresh event handling
             controller.refreshCustomers.startWith(Unit)
                 .flatMapSingle {
-                    Customer.all.toList()
+                    db.listAllCustomers().toList()
                 }.subscribeBy(
                     onNext = { items.setAll(it) },
                     onError = { alert(Alert.AlertType.ERROR, "PROBLEM!", it.message ?: "").show() }
@@ -189,7 +189,10 @@ class CustomerView : View() {
         controller.createNewCustomer
             .flatMapMaybe { NewCustomerDialog().toMaybe() }
             .flatMapMaybe { it }
-            .flatMapSingle { Customer.forId(it) }
+            .flatMapSingle {
+                db.loadCustomer(it)
+//                Customer.forId(it)
+            }
             .subscribe {
                 table.items.add(it)
                 table.selectionModel.clearSelection()

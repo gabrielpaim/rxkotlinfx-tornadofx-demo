@@ -12,27 +12,38 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxjavafx.subscriptions.CompositeBinding
 import io.reactivex.rxkotlin.*
 import javafx.collections.FXCollections
+import javafx.collections.ObservableList
 import javafx.scene.paint.Color
 import javafx.scene.text.Text
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import org.nield.rxkotlinjdbc.execute
 import org.nield.rxkotlinjdbc.insert
 import org.nield.rxkotlinjdbc.select
 
 data class SalesPerson(val firstName: String,
                        val lastName: String,
-                       val id: Int? = null) {
+                       val id: Int? = null) : KoinComponent {
+
+    private val db: Persistence by inject()
 
     //We maintain a collection of bindings and disposables to unsubscribe them later
     private val bindings = CompositeBinding()
     private val disposables = CompositeDisposable()
 
     // Hold original customer assignments for dirty validation
-    val originalAssignments = FXCollections.observableArrayList<Int>().apply {
-            assignmentsFor(id)
+    val originalAssignments by lazy {
+        if (id != null) {
+            FXCollections.observableArrayList<Int>().apply {
+                db.listAllAssignmentsForSalesPerson(id)
                     .map { it.customerId }
                     .subscribe { add(it) }
                     .addTo(disposables)
+            }
+        } else {
+            emptyList()
         }
+    }
 
 
     // The staged Customer ID's for this SalesPerson
@@ -58,15 +69,16 @@ data class SalesPerson(val firstName: String,
                 .map { (item, index) ->  Assignment(-1,id,item,index)}
                 .toSet()
 
-        val previousItems = assignmentsFor(id).toSet()
+        val previousItems =  db.listAllAssignmentsForSalesPerson(id)
+//            assignmentsFor(id).toSet()
 
         //zip old and new assignments together, compare them, and write changes
         return Singles.zip(newItems, previousItems)
             .flatMapObservable { (new,old) ->
 
                 Observable.merge(
-                        new.toObservable().filter { !old.contains(it) }.flatMapSingle { writeAssignment(it) },
-                        old.toObservable().filter { !new.contains(it) }.flatMapSingle { removeAssignment(it.id) }
+                        new.toObservable().filter { !old.contains(it) }.flatMapSingle { (it) },
+                        old.toObservable().filter { !new.contains(it) }.flatMapSingle { db.deleteAssignment(it.id) }
                 )
             }.count()
     }
@@ -91,16 +103,16 @@ data class SalesPerson(val firstName: String,
 
     companion object {
 
-        val all = db.listAllSalesPersons()
-
-        fun forId(id: Int) = db.loadSalesPerson(id)
-
-        fun assignmentsFor(salesPersonId: Int) = db.listAllAssignmentsForSalesPerson(salesPersonId)
-
-        fun createNew(firstName: String, lastName: String) = db.saveSalesPerson(SalesPerson(firstName, lastName))
-
-        private fun writeAssignment(assignment: Assignment) = db.saveAssignment(assignment)
-
-        private fun removeAssignment(assignmentId: Int) = db.deleteAssignment(assignmentId)
+//        val all = db.listAllSalesPersons()
+//
+//        fun forId(id: Int) = db.loadSalesPerson(id)
+//
+//        fun assignmentsFor(salesPersonId: Int) = db.listAllAssignmentsForSalesPerson(salesPersonId)
+//
+//        fun createNew(firstName: String, lastName: String) = db.saveSalesPerson(SalesPerson(firstName, lastName))
+//
+//        private fun writeAssignment(assignment: Assignment) = db.saveAssignment(assignment)
+//
+//        private fun removeAssignment(assignmentId: Int) = db.deleteAssignment(assignmentId)
     }
 }
