@@ -5,13 +5,16 @@ import com.github.thomasnield.rxkotlinfx.*
 import domain.SalesPerson
 import domain.persistence.Persistence
 import io.reactivex.Maybe
+import io.reactivex.rxjavafx.schedulers.JavaFxScheduler
 import io.reactivex.rxkotlin.toObservable
+import javafx.beans.binding.Binding
 import javafx.geometry.Orientation
 import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
 import javafx.scene.control.SelectionMode
 import javafx.scene.control.TableView
 import javafx.scene.paint.Color
+import javafx.scene.text.Text
 import org.controlsfx.glyphfont.FontAwesome
 import org.controlsfx.glyphfont.GlyphFontRegistry
 import tornadofx.*
@@ -82,8 +85,25 @@ class SalesPeopleView: View() {
             readonlyColumn("ID",SalesPerson::id)
             readonlyColumn("First Name",SalesPerson::firstName)
             readonlyColumn("Last Name",SalesPerson::lastName)
-            column("Assigned Clients", SalesPerson::customerAssignmentsConcat)
-            // TODO
+
+//            column("Assigned Clients", SalesPerson::customerAssignmentsConcat) // original
+
+            column("Assigned Clients", SalesPerson::customerAssignmentsConcat).cellFormat { (newList, originalList) ->
+                graphic = textflow {
+                    newList.forEach { newValue ->
+                        text(newValue.toString()) {
+                            if (!originalList.contains(newValue)) {
+                                fill = Color.RED
+                            }
+                        }
+                    }
+                }
+
+//                graphic = Text(newList.joinToString("|")).apply {
+//                    if (originalList != newList) fill = Color.RED
+//                }
+            }
+
 
             selectionModel.selectionMode = SelectionMode.MULTIPLE
 
@@ -201,3 +221,16 @@ class SalesPeopleView: View() {
         }
     }
 }
+
+//private val SalesPerson.customerAssignmentsConcat get(): Binding<Text> {
+//    return customerAssignments
+//        .onChangedObservable()
+//        .subscribeOn(JavaFxScheduler.platform())
+//        .map {
+//            Text(it.joinToString("|")).apply {
+//                if (originalAssignments != it) fill = Color.RED
+//            }
+//        }
+//        .toBinding()
+//        .addTo(bindings)
+//}

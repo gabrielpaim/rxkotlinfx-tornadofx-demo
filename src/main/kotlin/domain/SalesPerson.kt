@@ -13,6 +13,7 @@ import io.reactivex.rxkotlin.Singles
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.toObservable
 import io.reactivex.rxkotlin.zipWith
+import io.reactivex.schedulers.Schedulers
 import javafx.collections.FXCollections
 import javafx.scene.paint.Color
 import javafx.scene.text.Text
@@ -27,7 +28,7 @@ data class SalesPerson(val firstName: String,
     private val db: Persistence by inject()
 
     //We maintain a collection of bindings and disposables to unsubscribe them later
-    private val bindings = CompositeBinding()
+    val bindings = CompositeBinding()
     private val disposables = CompositeDisposable()
 
     // Hold original customer assignments for dirty validation
@@ -48,17 +49,22 @@ data class SalesPerson(val firstName: String,
     val customerAssignments = FXCollections.observableArrayList(originalAssignments)
 
     // A Binding holding formatted concatenations of the CompanyClient ID's for this SalesPerson
+//    val customerAssignmentsConcat = customerAssignments
+//        .onChangedObservable()
+//        .map { newList ->
+//            Text(newList.joinToString("|")).apply {
+//                if (originalAssignments != newList) fill = Color.RED
+//            }
+//        }
+//        .toBinding()
+//        .addTo(bindings)
+
     val customerAssignmentsConcat = customerAssignments
         .onChangedObservable()
-        .map {
-            Text(it.joinToString("|")).apply {
-                if (originalAssignments != it) fill = Color.RED
-            }
-        }
+        .map { it to originalAssignments }
+        .subscribeOn(Schedulers.computation())
         .toBinding()
         .addTo(bindings)
-    // TODO: make it work
-
 
     //Compares original and new Customer ID assignments and writes them to database
     fun saveAssignments(): Single<Long> {
