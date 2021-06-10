@@ -34,4 +34,9 @@ class PersistenceTest: ClosingKoinTest {
         db.loadSalesPerson(1).test().assertValue { it.firstName == "Joe" }
     }
 
+    @Test
+    fun `save Customer in database` () {
+//        db.saveCustomer(Customer)
+    }
+
 }

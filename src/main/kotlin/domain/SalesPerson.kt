@@ -62,44 +62,37 @@ data class SalesPerson(val firstName: String,
 
     //Compares original and new Customer ID assignments and writes them to database
     fun saveAssignments(): Single<Long> {
-
-        // TODO verificar condição no map
-        val newItems = customerAssignments
-            .toObservable()
-            .zipWith(Observable.range(1,Int.MAX_VALUE))
-            .map { (item, index) ->
-                if (id != null) {
+        return if (id == null) {
+            Single.error(IllegalArgumentException("SalesPerson $this is not saved"))
+        } else {
+            val newItems = customerAssignments
+                .toObservable()
+                .zipWith(Observable.range(1,Int.MAX_VALUE))
+                .map { (item, index) ->
                     Assignment(salesPersonId = id, customerId = item, order = index)
                 }
-            }
-            .toSet()
+                .toSet()
 
-        val previousItems =
-            if (id != null) {
-                db
-                    .listAllAssignmentsForSalesPerson(id)
-                    .toSet()
-            } else {
-                emptyList<Assignment>().toObservable().toSet()
-            }
+            val previousItems = db
+                .listAllAssignmentsForSalesPerson(id)
+                .toSet()
 
-        //zip old and new assignments together, compare them, and write changes
-
-        return Singles
-            .zip(newItems, previousItems)
-            .flatMapObservable { (new,old) ->
-                Observable
-                    .merge(
-                        new.toObservable()
-                            .filter { !old.contains(it) },
-                        old.toObservable()
-                            .filter { !new.contains(it) }
-                            .flatMapSingle { it.id?.let { it1 ->
-                                db.deleteAssignment(it1)
-                            }}
-                    )
-            }
-            .count()
+            //zip old and new assignments together, compare them, and write changes
+            return Singles
+                .zip(newItems, previousItems)
+                .flatMapObservable { (new, previous) ->
+                    Observable
+                        .merge(
+                            new.toObservable()
+                                .filter { !previous.contains(it) }
+                                .flatMapSingle { db.saveAssignment(it) },
+                            previous.toObservable()
+                                .filter { !new.contains(it) }
+                                .flatMapSingle { db.deleteAssignment(it.id!!) }
+                        )
+                }
+                .count()
+        }
     }
 
     /**Releases any reactive disposables associated with this SalesPerson.

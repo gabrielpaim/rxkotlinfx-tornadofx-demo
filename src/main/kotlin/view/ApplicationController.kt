@@ -2,12 +2,22 @@ package view
 
 import domain.Customer
 import domain.SalesPerson
+import io.reactivex.rxkotlin.toObservable
 import io.reactivex.subjects.BehaviorSubject
-import tornadofx.Controller
+import javafx.beans.property.SimpleObjectProperty
+import tornadofx.*
 
 class ApplicationController: Controller() {
 
-    val searchCustomers = BehaviorSubject.create<Set<Int>>()
+//    data class SearchCustomersUsagesEvent(val customerIds: Set<Int>) : FXEvent()
+//    object RefreshSalesPerson: FXEvent()
+
+    val searchCustomers = BehaviorSubject.create<Set<Int>>().apply {
+        subscribe {
+            println("searchCustomers emitted: $it")
+        }
+    }
+
     val searchCustomerUsages = BehaviorSubject.create<Set<Int>>().apply {
         subscribe {
             println("searchCustomerUsages emitted: $it")
@@ -40,7 +50,37 @@ class ApplicationController: Controller() {
     val createNewSalesPerson = BehaviorSubject.create<Unit>()
     val deleteSalesPerson = BehaviorSubject.create<Set<Int>>()
 
+//    fun handleAssignments(items: List<SalesPerson>) {
+//        // ------------ handle commits ---------------
+//        // Forma 1
+////        saveAssignments
+////            .flatMap {
+////                items
+////                    .toObservable()
+////                    .flatMapMaybe {
+////                        it.saveAssignments().toMaybe()
+////                    }
+////            }
+////            .map { }
+////            .subscribe(refreshSalesPeople)
+//////            .subscribe { fire(RefreshSalesPerson) }
+//
+//        // Forma 2
+//            saveAssignments
+//                .flatMapMaybe {
+//                    items
+//                        .toObservable()
+//                        .flatMapMaybe { it.saveAssignments().toMaybe() }
+//                        .reduce { x,y -> x + y}
+//                        .doOnSuccess { println("Committed $it changes") }
+//                }
+//                .map { }
+//                .subscribe(refreshSalesPeople)
+//        // ----------------------------------------------------
+//    }
+
     fun searchSelectedCustomers(customers: List<Customer>) {
+//        fire(SearchCustomersUsagesEvent(customers.mapNotNull { it.id }.toSet()))
         searchCustomerUsages.onNext(customers.mapNotNull { it.id }.toSet())
     }
 

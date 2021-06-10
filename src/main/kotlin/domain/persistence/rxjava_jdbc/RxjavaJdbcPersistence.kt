@@ -116,7 +116,7 @@ class RxjavaJdbcPersistence(private val db: Connection): Persistence {
             .parameter("customerId", assignment.customerId)
             .parameter("applyOrder", assignment.order)
             .toSingle {
-                assignment.copy(id = it.getInt("ID"))
+                assignment.copy(id = it.getInt(1))
             }
     }
 

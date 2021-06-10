@@ -21,7 +21,7 @@ class MainView : View() {
         title = "Client/Salesperson Assignments"
 
         // show gui loading gif...
-        initializeData(db).subscribe()
+        initializeData(db).blockingAwait()
 
         with(root) {
             setPrefSize(940.0,610.0)

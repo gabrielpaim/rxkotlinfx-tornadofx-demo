@@ -5,7 +5,6 @@ import com.github.thomasnield.rxkotlinfx.*
 import domain.SalesPerson
 import domain.persistence.Persistence
 import io.reactivex.Maybe
-import io.reactivex.Single
 import io.reactivex.rxkotlin.toObservable
 import javafx.geometry.Orientation
 import javafx.scene.control.Alert
@@ -13,7 +12,6 @@ import javafx.scene.control.ButtonType
 import javafx.scene.control.SelectionMode
 import javafx.scene.control.TableView
 import javafx.scene.paint.Color
-import javafx.scene.text.Text
 import org.controlsfx.glyphfont.FontAwesome
 import org.controlsfx.glyphfont.GlyphFontRegistry
 import tornadofx.*
@@ -65,22 +63,12 @@ class SalesPeopleView: View() {
             button("",removeGlyph) {
                 tooltip("Remove selected Customers")
                 useMaxWidth = true
-               val a= actionEvents()
+               actionEvents()
                     .flatMapSingle {
-
-                        // TODO verificar
-
                         table.selectionModel.selectedItems
                             .mapNotNull { it.id }
                             .toObservable()
                             .toSet()
-
-//                            .toObservable()
-//                            .map { it.id }
-//                            .flatMapMaybe {
-//                                Maybe.just(it)
-//                            }
-//                            .toSet()
                     }
                     .subscribe(controller.deleteSalesPerson)
             }
@@ -90,29 +78,31 @@ class SalesPeopleView: View() {
 
         center = tableview<SalesPerson> {
             table = this
+
             readonlyColumn("ID",SalesPerson::id)
             readonlyColumn("First Name",SalesPerson::firstName)
             readonlyColumn("Last Name",SalesPerson::lastName)
-
-//            column("Assigned Clients", SalesPerson::customerAssignmentsConcat) {
-//                this.
-//            }
-
             column("Assigned Clients", SalesPerson::customerAssignmentsConcat)
             // TODO
 
             selectionModel.selectionMode = SelectionMode.MULTIPLE
 
-            //broadcast selections
+            // --- broadcast selections
             selectionModel.selectedItems.onChangedObservable()
                 .map { it.asSequence().filterNotNull().toSet() }
                 .subscribe(controller.selectedSalesPeople)
 
-            //handle search requests
+//            // handle search requests (start)
             controller.searchCustomerUsages.subscribe { ids ->
                 moveToTopWhere { it.customerAssignments.any { it in ids } }
                 requestFocus()
             }
+
+//            subscribe<ApplicationController.SearchCustomersUsagesEvent> { event ->
+//                moveToTopWhere { it.customerAssignments.any { it in event.customerIds } }
+//                requestFocus()
+//            }
+//            // handle search requests (end)
 
             //handle adds
             controller.applyCustomers.subscribe { ids ->
@@ -128,32 +118,18 @@ class SalesPeopleView: View() {
                 }
             }
 
-            // ------------ handle commits ---------------
-            // Forma 1
-            controller
-                .saveAssignments
-                .flatMap {
+//            controller.handleAssignments(items)
+            controller.saveAssignments
+                .flatMapMaybe {
                     items
                         .toObservable()
-                        .flatMapSingle {
-                            it.saveAssignments().map { }
-                        }
+                        .flatMapSingle { it.saveAssignments() }
+                        .reduce { x,y -> x + y}
+                        .doOnSuccess { println("Committed $it changes") }
                 }
+                .map { }
                 .subscribe(controller.refreshSalesPeople)
 
-            // Forma 2
-//            controller
-//                .saveAssignments
-//                .flatMapMaybe {
-//                    items
-//                        .toObservable()
-//                        .flatMapMaybe { it.saveAssignments().toMaybe() }
-//                        .reduce { x,y -> x + y}
-//                        .doOnSuccess { println("Committed $it changes") }
-//                }
-//                .map { }
-//                .subscribe(controller.refreshSalesPeople)
-            // ----------------------------------------------------
 
             //handle refresh events and import data
             controller.refreshSalesPeople

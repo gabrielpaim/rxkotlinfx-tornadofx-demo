@@ -83,11 +83,15 @@ class AppliedCustomerView : View() {
                                     if (x.id != null && y.id != null) {
                                         x.id.compareTo(y.id)
                                     } else {
-                                        1
-
+                                        -1
                                     }
-//                                    x.id.compareTo(y.id)
                                 }
+//                                .map { listCustomer ->
+//                                    listCustomer
+//                                        .filter { customer ->
+//                                            customer.id != -1
+//                                        }
+//                                }
                                 .toObservable()
                         }
                     }.subscribeBy(
