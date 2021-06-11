@@ -6,7 +6,6 @@ import com.github.thomasnield.rxkotlinfx.events
 import com.github.thomasnield.rxkotlinfx.onChangedObservable
 import domain.Customer
 import domain.persistence.Persistence
-import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.rxkotlin.toObservable
@@ -17,7 +16,9 @@ import javafx.scene.input.KeyEvent
 import javafx.scene.layout.BorderPane
 import tornadofx.*
 
+
 class AppliedCustomerView : View() {
+
     override val root = BorderPane()
 
     private val controller: ApplicationController by inject()
@@ -28,7 +29,7 @@ class AppliedCustomerView : View() {
     init {
         with(root) {
 
-            top = label("ASSIGNED CUSTOMERS").addClass(Styles.heading)
+            top = label("ASSIGNED asdasdasdasS").addClass(Styles.heading)
 
             center = tableview<Customer> {
                 table = this
@@ -79,7 +80,7 @@ class AppliedCustomerView : View() {
                                     db.loadCustomer(it)
                                         .toSingle()
                                 }
-                                .toSortedList { x,y ->
+                                .toSortedList { x, y ->
                                     if (x.id != null && y.id != null) {
                                         x.id.compareTo(y.id)
                                     } else {
@@ -97,7 +98,9 @@ class AppliedCustomerView : View() {
                     }.subscribeBy(
                         onNext = {
                             items.setAll(it)
-                            selectWhere { it.id in selectionModel.selectedItems.asSequence().filterNotNull().map { it.id }.toSet() }
+                            selectWhere {
+                                it.id in selectionModel.selectedItems.asSequence().filterNotNull().map { it.id }.toSet()
+                            }
                             requestFocus()
                             resizeColumnsToFitContent()
                         },
@@ -115,7 +118,8 @@ class AppliedCustomerView : View() {
                     controller.selectedSalesPeople.map { it.size > 1 }.subscribe { isDisable = it }
 
                     //broadcast move up requests
-                    val keyEvents =  table.events(KeyEvent.KEY_PRESSED).filter { it.isControlDown && it.code == KeyCode.UP }
+                    val keyEvents =
+                        table.events(KeyEvent.KEY_PRESSED).filter { it.isControlDown && it.code == KeyCode.UP }
                     val buttonEvents = actionEvents()
 
                     Observable.merge(keyEvents, buttonEvents)
@@ -126,7 +130,7 @@ class AppliedCustomerView : View() {
 
                     // re-select moved customer
                     controller.moveCustomerUp.subscribe { customerId ->
-                        table.selectWhere { it.id == customerId  }
+                        table.selectWhere { it.id == customerId }
                     }
                     useMaxWidth = true
                 }
@@ -137,7 +141,8 @@ class AppliedCustomerView : View() {
                     controller.selectedSalesPeople.map { it.size > 1 }.subscribe { isDisable = it }
 
                     //broadcast move down requests
-                    val keyEvents =  table.events(KeyEvent.KEY_PRESSED).filter { it.isControlDown && it.code == KeyCode.DOWN }
+                    val keyEvents =
+                        table.events(KeyEvent.KEY_PRESSED).filter { it.isControlDown && it.code == KeyCode.DOWN }
                     val buttonEvents = actionEvents()
 
                     Observable.merge(keyEvents, buttonEvents)
@@ -148,7 +153,7 @@ class AppliedCustomerView : View() {
 
                     // re-select moved customer
                     controller.moveCustomerDown.subscribe { customerId ->
-                        table.selectWhere { it.id == customerId  }
+                        table.selectWhere { it.id == customerId }
                     }
 
                     useMaxWidth = true

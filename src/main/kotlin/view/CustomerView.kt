@@ -31,7 +31,7 @@ class CustomerView : View() {
 
     private val db: Persistence by di()
 
-    lateinit var selectedCustomers: ObservableList<Customer>
+    var selectedCustomers: ObservableList<Customer> by singleAssign()
 
     override val root = borderpane {
         top = label("CUSTOMER").addClass(Styles.heading)
@@ -45,6 +45,7 @@ class CustomerView : View() {
             //broadcast selections:
             // Forma 1:
             selectedCustomers = selectionModel.selectedItems
+
             // Forma 2:
 //            selectionModel
 //                .selectedItems
@@ -91,13 +92,19 @@ class CustomerView : View() {
 //                            .selectedCustomers
 //                            .take(1)
 //                            .flatMap { it.toObservable() }
-//                            .map { it.id }
+//                            .map { it.id ?: 1 }
 //                            .toSet()
 //                    }
 //                    .subscribe(controller.searchCustomerUsages)
             }
+
             // search selected applied
             button("⇉\uD83D\uDD0E") {
+
+//                action {
+//                    controller.searchSelectedApplied()
+//                }
+
                 actionEvents()
                     .flatMapSingle {
                         controller
@@ -133,7 +140,7 @@ class CustomerView : View() {
 //                        .selectedCustomers
 //                        .take(1)
 //                        .flatMap { it.toObservable() }
-//                        .map { it.id }
+//                        .map { it.id ?: -1 }
 //                        .toSet()
 //                    }
 //                    .subscribe(controller.applyCustomers)
@@ -154,10 +161,11 @@ class CustomerView : View() {
                         controller.removeCustomerUsages(selectedCustomers)
                     }
 
-//                Observable.merge(keyEvents,buttonEvents).flatMapSingle {
+//                Observable.merge(keyEvents,buttonEvents)
+//                    .flatMapSingle {
 //                    controller.selectedCustomers.take(1)
 //                        .flatMap { it.toObservable() }
-//                        .map { it.id }
+//                        .map { it.id ?: -1 }
 //                        .toSet()
 //                }.subscribe(controller.removeCustomerUsages)
 

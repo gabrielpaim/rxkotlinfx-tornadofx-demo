@@ -1,13 +1,22 @@
 package view
 
+import app.toSet
+import domain.Assignment
 import domain.Customer
 import domain.SalesPerson
+import domain.persistence.Persistence
+import io.reactivex.Observable
+import io.reactivex.Single
+import io.reactivex.rxkotlin.Singles
 import io.reactivex.rxkotlin.toObservable
+import io.reactivex.rxkotlin.zipWith
 import io.reactivex.subjects.BehaviorSubject
-import javafx.beans.property.SimpleObjectProperty
+import javafx.collections.ObservableList
 import tornadofx.*
 
 class ApplicationController: Controller() {
+
+    private val db : Persistence by di()
 
 //    data class SearchCustomersUsagesEvent(val customerIds: Set<Int>) : FXEvent()
 //    object RefreshSalesPerson: FXEvent()
@@ -30,11 +39,6 @@ class ApplicationController: Controller() {
     val refreshSalesPeople = BehaviorSubject.create<Unit>()
     val refreshCustomers = BehaviorSubject.create<Unit>()
 
-    val selectedCustomers = BehaviorSubject.create<Set<Customer>>().apply {
-        subscribe {
-            println("selectedCustomers emitted: $it")
-        }
-    }
     val selectedSalesPeople = BehaviorSubject.create<Set<SalesPerson>>()
     val selectedApplications = BehaviorSubject.create<Set<Int>>()
 
@@ -50,34 +54,6 @@ class ApplicationController: Controller() {
     val createNewSalesPerson = BehaviorSubject.create<Unit>()
     val deleteSalesPerson = BehaviorSubject.create<Set<Int>>()
 
-//    fun handleAssignments(items: List<SalesPerson>) {
-//        // ------------ handle commits ---------------
-//        // Forma 1
-////        saveAssignments
-////            .flatMap {
-////                items
-////                    .toObservable()
-////                    .flatMapMaybe {
-////                        it.saveAssignments().toMaybe()
-////                    }
-////            }
-////            .map { }
-////            .subscribe(refreshSalesPeople)
-//////            .subscribe { fire(RefreshSalesPerson) }
-//
-//        // Forma 2
-//            saveAssignments
-//                .flatMapMaybe {
-//                    items
-//                        .toObservable()
-//                        .flatMapMaybe { it.saveAssignments().toMaybe() }
-//                        .reduce { x,y -> x + y}
-//                        .doOnSuccess { println("Committed $it changes") }
-//                }
-//                .map { }
-//                .subscribe(refreshSalesPeople)
-//        // ----------------------------------------------------
-//    }
 
     fun searchSelectedCustomers(customers: List<Customer>) {
 //        fire(SearchCustomersUsagesEvent(customers.mapNotNull { it.id }.toSet()))
@@ -90,5 +66,75 @@ class ApplicationController: Controller() {
 
     fun removeCustomerUsages(customers: List<Customer>) {
         removeCustomerUsages.onNext(customers.mapNotNull { it.id }.toSet())
+    }
+
+    fun searchSelectedApplied() {
+        selectedSalesPeople
+            .take(1)
+            .flatMap { it.toObservable() }
+            .flatMap { it.customerAssignments.toObservable() }
+            .distinct()
+            .toSet()
+
+
+
+
+//        .flatMapSingle {
+//            controller
+//                .selectedSalesPeople
+//                .take(1)
+//                .flatMap { it.toObservable() }
+//                .flatMap { it.customerAssignments.toObservable() }
+//                .distinct()
+//                .toSet()
+//        }.subscribe(controller.searchCustomers)
+    }
+
+    fun handleAssignments(items: List<SalesPerson>) {
+        saveAssignments
+            .flatMapMaybe {
+                items
+                    .toObservable()
+                    .flatMapMaybe { saveAssignments(it.id, it.customerAssignments).toMaybe() }
+                    .reduce { x,y -> x + y}
+                    .doOnSuccess { println("Committed $it changes") }
+            }
+            .map { }
+            .subscribe(refreshSalesPeople)
+    }
+
+    //Compares original and new Customer ID assignments and writes them to database
+    fun saveAssignments(id: Int?, customerAssignments: ObservableList<Int>): Single<Long> {
+        return if (id == null) {
+            Single.error(IllegalArgumentException("SalesPerson is not saved"))
+        } else {
+            val newItems = customerAssignments
+                .toObservable()
+                .zipWith(Observable.range(1,Int.MAX_VALUE))
+                .map { (item, index) ->
+                    Assignment(salesPersonId = id, customerId = item, order = index)
+                }
+                .toSet()
+
+            val previousItems = db
+                .listAllAssignmentsForSalesPerson(id)
+                .toSet()
+
+            //zip old and new assignments together, compare them, and write changes
+            return Singles
+                .zip(newItems, previousItems)
+                .flatMapObservable { (new, previous) ->
+                    Observable
+                        .merge(
+                            new.toObservable()
+                                .filter { !previous.contains(it) }
+                                .flatMapSingle { db.saveAssignment(it) },
+                            previous.toObservable()
+                                .filter { !new.contains(it) }
+                                .flatMapSingle { db.deleteAssignment(it.id!!) }
+                        )
+                }
+                .count()
+        }
     }
 }

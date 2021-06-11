@@ -86,22 +86,22 @@ class SalesPeopleView: View() {
             readonlyColumn("First Name",SalesPerson::firstName)
             readonlyColumn("Last Name",SalesPerson::lastName)
 
-//            column("Assigned Clients", SalesPerson::customerAssignmentsConcat) // original
-
             column("Assigned Clients", SalesPerson::customerAssignmentsConcat).cellFormat { (newList, originalList) ->
                 graphic = textflow {
-                    newList.forEach { newValue ->
+                    val iter = newList.iterator()
+                    while(iter.hasNext()) {
+                        val newValue = iter.next()
                         text(newValue.toString()) {
                             if (!originalList.contains(newValue)) {
                                 fill = Color.RED
                             }
                         }
+                        if (iter.hasNext()) {
+                            text("|")
+                        }
                     }
                 }
 
-//                graphic = Text(newList.joinToString("|")).apply {
-//                    if (originalList != newList) fill = Color.RED
-//                }
             }
 
 
@@ -112,17 +112,11 @@ class SalesPeopleView: View() {
                 .map { it.asSequence().filterNotNull().toSet() }
                 .subscribe(controller.selectedSalesPeople)
 
-//            // handle search requests (start)
+            // handle search requests
             controller.searchCustomerUsages.subscribe { ids ->
                 moveToTopWhere { it.customerAssignments.any { it in ids } }
                 requestFocus()
             }
-
-//            subscribe<ApplicationController.SearchCustomersUsagesEvent> { event ->
-//                moveToTopWhere { it.customerAssignments.any { it in event.customerIds } }
-//                requestFocus()
-//            }
-//            // handle search requests (end)
 
             //handle adds
             controller.applyCustomers.subscribe { ids ->
@@ -138,18 +132,7 @@ class SalesPeopleView: View() {
                 }
             }
 
-//            controller.handleAssignments(items)
-            controller.saveAssignments
-                .flatMapMaybe {
-                    items
-                        .toObservable()
-                        .flatMapSingle { it.saveAssignments() }
-                        .reduce { x,y -> x + y}
-                        .doOnSuccess { println("Committed $it changes") }
-                }
-                .map { }
-                .subscribe(controller.refreshSalesPeople)
-
+            controller.handleAssignments(items)
 
             //handle refresh events and import data
             controller.refreshSalesPeople
@@ -221,16 +204,3 @@ class SalesPeopleView: View() {
         }
     }
 }
-
-//private val SalesPerson.customerAssignmentsConcat get(): Binding<Text> {
-//    return customerAssignments
-//        .onChangedObservable()
-//        .subscribeOn(JavaFxScheduler.platform())
-//        .map {
-//            Text(it.joinToString("|")).apply {
-//                if (originalAssignments != it) fill = Color.RED
-//            }
-//        }
-//        .toBinding()
-//        .addTo(bindings)
-//}
