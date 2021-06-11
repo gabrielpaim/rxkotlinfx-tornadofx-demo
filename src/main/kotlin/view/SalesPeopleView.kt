@@ -66,7 +66,7 @@ class SalesPeopleView: View() {
             button("",removeGlyph) {
                 tooltip("Remove selected Customers")
                 useMaxWidth = true
-               actionEvents()
+                actionEvents()
                     .flatMapSingle {
                         table.selectionModel.selectedItems
                             .mapNotNull { it.id }
@@ -184,23 +184,26 @@ class SalesPeopleView: View() {
             }
 
         //handle sales person deletions
-        controller.deleteSalesPerson.flatMapSingle {
-            table.currentSelections.toList().flatMap { deleteItems ->
-                Alert(Alert.AlertType.WARNING, "Are you sure you want to delete these ${deleteItems.size} sales people?", ButtonType.YES, ButtonType.NO).toMaybe()
-                    .filter { it == ButtonType.YES }
-                    .flatMapObservable {  deleteItems.toObservable() }
-                    .flatMapSingle {
-                        if (it.id != null) {
-                            db.deleteSalesPerson(it.id)
-                        } else {
-                            Maybe.empty<Int>().toSingle()
-                        }
+        controller.deleteSalesPerson
+            .flatMapSingle {
+                table.currentSelections
+                    .toList()
+                    .flatMap { deleteItems ->
+                        Alert(Alert.AlertType.WARNING, "Are you sure you want to delete these ${deleteItems.size} sales people?", ButtonType.YES, ButtonType.NO).toMaybe()
+                            .filter { it == ButtonType.YES }
+                            .flatMapObservable {  deleteItems.toObservable() }
+                            .flatMapSingle {
+                                if (it.id != null) {
+                                    db.deleteSalesPerson(it.id)
+                                } else {
+                                    Maybe.empty<Int>().toSingle()
+                                }
 
+                            }
+                            .toSet()
                     }
-                    .toSet()
+            }.subscribe { deletedIds ->
+                table.items.deleteWhere { it.id in deletedIds }
             }
-        }.subscribe { deletedIds ->
-            table.items.deleteWhere { it.id in deletedIds }
-        }
     }
 }

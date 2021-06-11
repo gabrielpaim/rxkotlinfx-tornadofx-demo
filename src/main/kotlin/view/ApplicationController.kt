@@ -76,9 +76,6 @@ class ApplicationController: Controller() {
             .distinct()
             .toSet()
 
-
-
-
 //        .flatMapSingle {
 //            controller
 //                .selectedSalesPeople
@@ -96,7 +93,10 @@ class ApplicationController: Controller() {
                 items
                     .toObservable()
                     .flatMapMaybe { saveAssignments(it.id, it.customerAssignments).toMaybe() }
-                    .reduce { x,y -> x + y}
+                    .reduce { x,y ->
+                        println("Sum:  $x + $y = ${x+y}")
+                        x + y
+                    }
                     .doOnSuccess { println("Committed $it changes") }
             }
             .map { }

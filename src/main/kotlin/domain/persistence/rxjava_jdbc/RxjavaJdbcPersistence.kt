@@ -70,9 +70,10 @@ class RxjavaJdbcPersistence(private val db: Connection): Persistence {
 
     override fun saveSalesPerson(salesPerson: SalesPerson): Single<SalesPerson> {
         return if (salesPerson.id != null && loadSalesPerson(salesPerson.id).blockingGet() != null) {
-            return db.insert("UPDATE SALES_PERSON (FIRST_NAME, LAST_NAME) VALUES (:first_name, :last_name)")
-                .parameter("first_name", salesPerson.firstName)
-                .parameter("last_name", salesPerson.lastName)
+            return db.insert("UPDATE SALES_PERSON SET FIRST_NAME = ?, LAST_NAME  = ? where ID = ? ")
+                .parameter(salesPerson.firstName)
+                .parameter( salesPerson.lastName)
+                .parameter(salesPerson.id)
                 .toSingle {
                     salesPerson
                 }

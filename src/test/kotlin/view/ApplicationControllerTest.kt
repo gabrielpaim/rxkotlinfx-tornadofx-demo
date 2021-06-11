@@ -44,13 +44,13 @@ class ApplicationControllerTest : TornadoFxWithKoinTest {
             .test()
             .assertValue { it == 1L }
 
-        val db: Persistence = get()
+//        val db: Persistence = get()
 //        initializeData(db).blockingAwait()
-
+//
 //        controller
-//            .saveAssignments(1, customerAssignmentIds )
+//            .saveAssignments(2, customerAssignmentIds )
 //            .test()
-//            .assertValue { it == 1L }
+//            .assertValue { it == 3L }
 
     }
 

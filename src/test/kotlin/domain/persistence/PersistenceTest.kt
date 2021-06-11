@@ -2,6 +2,7 @@ package domain.persistence
 
 import app.mainModule
 import domain.Customer
+import domain.SalesPerson
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.koin.core.context.startKoin
@@ -50,6 +51,25 @@ class PersistenceTest: ClosingKoinTest {
         db.loadCustomer(1)
             .test()
             .assertValue{ it.name == "Joseph" && it.id == 1 }
+    }
+
+    @Test
+    fun `save salesPerson in database `() {
+        db.listAllSalesPersons()
+            .test()
+            .assertValueCount(0)
+
+        db.saveSalesPerson(SalesPerson("Eduardo", "Marinho"))
+            .test()
+            .assertValue { it.firstName == "Eduardo" && it.lastName == "Marinho" }
+
+        db.loadSalesPerson(1)
+            .test()
+            .assertValue { it.firstName == "Eduardo" && it.lastName == "Marinho" }
+
+        db.saveSalesPerson(SalesPerson("EduardoOoO", "marinho", 1))
+            .test()
+            .assertValue { it.firstName ==  "EduardoOoO" && it.lastName == "marinho" }
     }
 
 }
