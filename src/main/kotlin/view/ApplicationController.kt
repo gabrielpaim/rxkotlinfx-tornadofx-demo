@@ -8,10 +8,12 @@ import domain.persistence.Persistence
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.rxkotlin.Singles
+import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.rxkotlin.toObservable
 import io.reactivex.rxkotlin.zipWith
 import io.reactivex.subjects.BehaviorSubject
 import javafx.collections.ObservableList
+import javafx.scene.control.Alert
 import tornadofx.*
 
 class ApplicationController: Controller() {
@@ -46,7 +48,6 @@ class ApplicationController: Controller() {
     val moveCustomerDown = BehaviorSubject.create<Int>()
 
     val saveAssignments = BehaviorSubject.create<Unit>()
-
     val createNewCustomer = BehaviorSubject.create<Unit>()
     val deleteCustomers = BehaviorSubject.create<Set<Int>>()
     val deletedCustomers = BehaviorSubject.create<Set<Int>>()
@@ -68,13 +69,31 @@ class ApplicationController: Controller() {
         removeCustomerUsages.onNext(customers.mapNotNull { it.id }.toSet())
     }
 
+    fun refreshCustomers(items: ObservableList<Customer>){
+        refreshCustomers
+            .startWith(Unit)
+            .flatMapSingle {
+                db.listAllCustomers().toList()
+            }.subscribeBy(
+                onNext = { items.setAll(it) },
+                onError = { alert(Alert.AlertType.ERROR, "PROBLEM!", it.message ?: "").show() }
+            )
+    }
+
+    fun deleteCustomers (items: ObservableList<Customer>){
+        deleteCustomers.onNext(items.mapNotNull { it.id }.toSet())
+    }
+
+
     fun searchSelectedApplied() {
-        selectedSalesPeople
+        val selectedSalesPeopleIds = selectedSalesPeople
             .take(1)
             .flatMap { it.toObservable() }
             .flatMap { it.customerAssignments.toObservable() }
             .distinct()
             .toSet()
+
+        searchCustomers.onNext(selectedSalesPeopleIds.blockingGet())
 
 //        .flatMapSingle {
 //            controller
@@ -94,7 +113,6 @@ class ApplicationController: Controller() {
                     .toObservable()
                     .flatMapMaybe { saveAssignments(it.id, it.customerAssignments).toMaybe() }
                     .reduce { x,y ->
-                        println("Sum:  $x + $y = ${x+y}")
                         x + y
                     }
                     .doOnSuccess { println("Committed $it changes") }

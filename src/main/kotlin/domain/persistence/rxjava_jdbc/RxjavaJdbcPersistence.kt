@@ -18,8 +18,8 @@ class RxjavaJdbcPersistence(private val db: Connection): Persistence {
 
     override fun deleteCustomer(id: Int): Single<Int> {
         return db
-            .execute("DELETE FROM CUSTOMER WHERE ID = ?")
-            .parameter(id)
+            .execute("DELETE FROM CUSTOMER WHERE ID = :id")
+            .parameter("id", id)
             .toSingle()
     }
 
@@ -62,10 +62,11 @@ class RxjavaJdbcPersistence(private val db: Connection): Persistence {
     }
 
     override fun deleteSalesPerson(id: Int): Single<Int> {
-        return db
-            .execute("DELETE FROM SALES_PERSON WHERE ID = ?")
-            .parameter(id)
+        db
+            .execute("DELETE FROM SALES_PERSON WHERE ID = :id")
+            .parameter("id", id)
             .toSingle()
+        return Single.just(id)
     }
 
     override fun saveSalesPerson(salesPerson: SalesPerson): Single<SalesPerson> {

@@ -29,7 +29,7 @@ class AppliedCustomerView : View() {
     init {
         with(root) {
 
-            top = label("ASSIGNED asdasdasdasS").addClass(Styles.heading)
+            top = label("ASSIGNEDS").addClass(Styles.heading)
 
             center = tableview<Customer> {
                 table = this

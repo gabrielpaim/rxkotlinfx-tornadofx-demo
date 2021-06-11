@@ -72,4 +72,33 @@ class PersistenceTest: ClosingKoinTest {
             .assertValue { it.firstName ==  "EduardoOoO" && it.lastName == "marinho" }
     }
 
+    @Test
+    fun `delete salePerson in database` () {
+        db.saveSalesPerson(SalesPerson("Messias", "jose"))
+            .test()
+        db.saveSalesPerson(SalesPerson("Anderson", "Brabo"))
+            .test()
+
+//        db.loadSalesPerson(1)
+//            .test()
+//            .assertValue { it.firstName == "Messias" }
+//
+//        db.loadSalesPerson(2)
+//            .test()
+//            .assertValue { it.firstName == "Anderson" }
+
+        db.listAllSalesPersons()
+            .test()
+            .assertValueCount(2)
+
+        db.deleteSalesPerson(2)
+            .test()
+            .assertValue { it == 2 }
+
+        db.listAllSalesPersons()
+            .test()
+            .assertValueCount(1)
+
+    }
+
 }

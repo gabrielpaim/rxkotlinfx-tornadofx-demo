@@ -1,12 +1,9 @@
 package domain
 
-import app.toSet
 import com.github.thomasnield.rxkotlinfx.addTo
 import com.github.thomasnield.rxkotlinfx.onChangedObservable
 import com.github.thomasnield.rxkotlinfx.toBinding
 import domain.persistence.Persistence
-import io.reactivex.Observable
-import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxjavafx.subscriptions.CompositeBinding
 import io.reactivex.rxkotlin.addTo
@@ -56,7 +53,9 @@ data class SalesPerson(val firstName: String,
 
     val customerAssignmentsConcat = customerAssignments
         .onChangedObservable()
-        .map { it to originalAssignments }
+        .map {
+            it to originalAssignments
+        }
         .subscribeOn(Schedulers.computation())
         .toBinding()
         .addTo(bindings)

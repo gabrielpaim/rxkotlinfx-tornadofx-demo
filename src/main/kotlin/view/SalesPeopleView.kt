@@ -39,6 +39,7 @@ class SalesPeopleView: View() {
 
             //save button
             button("",saveGlyph) {
+                tooltip("Save assignments")
                 useMaxWidth = true
                 actionEvents()
                     .map { Unit }
@@ -69,7 +70,9 @@ class SalesPeopleView: View() {
                 actionEvents()
                     .flatMapSingle {
                         table.selectionModel.selectedItems
-                            .mapNotNull { it.id }
+                            .mapNotNull {
+                                it.id
+                            }
                             .toObservable()
                             .toSet()
                     }
@@ -86,23 +89,24 @@ class SalesPeopleView: View() {
             readonlyColumn("First Name",SalesPerson::firstName)
             readonlyColumn("Last Name",SalesPerson::lastName)
 
-            column("Assigned Clients", SalesPerson::customerAssignmentsConcat).cellFormat { (newList, originalList) ->
-                graphic = textflow {
-                    val iter = newList.iterator()
-                    while(iter.hasNext()) {
-                        val newValue = iter.next()
-                        text(newValue.toString()) {
-                            if (!originalList.contains(newValue)) {
-                                fill = Color.RED
+            column("Assigned Clients", SalesPerson::customerAssignmentsConcat)
+                .cellFormat { (newList, originalList) ->
+                    graphic = textflow {
+                        val iter = newList.iterator()
+                        while(iter.hasNext()) {
+                            val newValue = iter.next()
+                            text(newValue.toString()) {
+                                if (!originalList.contains(newValue)) {
+                                    fill = Color.RED
+                                }
+                            }
+                            if (iter.hasNext()) {
+                                text("|")
                             }
                         }
-                        if (iter.hasNext()) {
-                            text("|")
-                        }
                     }
-                }
 
-            }
+                }
 
 
             selectionModel.selectionMode = SelectionMode.MULTIPLE
@@ -140,7 +144,9 @@ class SalesPeopleView: View() {
                 .startWith(Unit)
                 .flatMapSingle {
                     db.listAllSalesPersons().toList()
-                }.subscribe { items.setAll(it) }
+                }.subscribe {
+                    items.setAll(it)
+                }
 
             //handle move up and move down requests
             controller.moveCustomerUp
@@ -193,16 +199,13 @@ class SalesPeopleView: View() {
                             .filter { it == ButtonType.YES }
                             .flatMapObservable {  deleteItems.toObservable() }
                             .flatMapSingle {
-                                if (it.id != null) {
-                                    db.deleteSalesPerson(it.id)
-                                } else {
-                                    Maybe.empty<Int>().toSingle()
-                                }
-
+                                db.deleteSalesPerson(it.id!!)
                             }
                             .toSet()
                     }
-            }.subscribe { deletedIds ->
+            }
+            .subscribe { deletedIds ->
+                println("DeletedIds $deletedIds" )
                 table.items.deleteWhere { it.id in deletedIds }
             }
     }

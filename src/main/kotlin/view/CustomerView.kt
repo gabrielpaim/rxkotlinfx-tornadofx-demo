@@ -54,13 +54,17 @@ class CustomerView : View() {
 //                .subscribe(controller.selectedCustomers)
 
             //Import data and refresh event handling
-            controller.refreshCustomers.startWith(Unit)
-                .flatMapSingle {
-                    db.listAllCustomers().toList()
-                }.subscribeBy(
-                    onNext = { items.setAll(it) },
-                    onError = { alert(Alert.AlertType.ERROR, "PROBLEM!", it.message ?: "").show() }
-                )
+
+            controller.refreshCustomers (items)
+
+//            controller.refreshCustomers
+//                .startWith(Unit)
+//                .flatMapSingle {
+//                    db.listAllCustomers().toList()
+//                }.subscribeBy(
+//                    onNext = { items.setAll(it) },
+//                    onError = { alert(Alert.AlertType.ERROR, "PROBLEM!", it.message ?: "").show() }
+//                )
 
             //handle search request
             controller.searchCustomers
@@ -101,20 +105,20 @@ class CustomerView : View() {
             // search selected applied
             button("⇉\uD83D\uDD0E") {
 
-//                action {
-//                    controller.searchSelectedApplied()
-//                }
+                action {
+                    controller.searchSelectedApplied()
+                }
 
-                actionEvents()
-                    .flatMapSingle {
-                        controller
-                            .selectedSalesPeople
-                            .take(1)
-                            .flatMap { it.toObservable() }
-                            .flatMap { it.customerAssignments.toObservable() }
-                            .distinct()
-                            .toSet()
-                    }.subscribe(controller.searchCustomers)
+//                actionEvents()
+//                    .flatMapSingle {
+//                        controller
+//                            .selectedSalesPeople
+//                            .take(1)
+//                            .flatMap { it.toObservable() }
+//                            .flatMap { it.customerAssignments.toObservable() }
+//                            .distinct()
+//                            .toSet()
+//                    }.subscribe(controller.searchCustomers)
             }
 
             button("⇇") {
@@ -185,18 +189,21 @@ class CustomerView : View() {
                 useMaxWidth = true
                 textFill = Color.RED
 
+                action {
+                    controller.deleteCustomers(table.selectionModel.selectedItems)
+                }
 
-                actionEvents()
-                    .map {
-                        table
-                            .selectionModel
-                            .selectedItems
-                            .asSequence()
-                            .map { it.id }
-                            .filterNotNull()
-                            .toSet()
-                    }
-                    .subscribe(controller.deleteCustomers)
+//                actionEvents()
+//                    .map {
+//                        table
+//                            .selectionModel
+//                            .selectedItems
+//                            .asSequence()
+//                            .map { it.id }
+//                            .filterNotNull()
+//                            .toSet()
+//                    }
+//                    .subscribe(controller.deleteCustomers)
             }
         }
 

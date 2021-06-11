@@ -1,6 +1,7 @@
 package view
 
 import com.github.thomasnield.rxkotlinfx.actionEvents
+import com.github.thomasnield.rxkotlinfx.toMaybe
 import domain.persistence.Persistence
 import domain.persistence.initializeData
 import javafx.geometry.Orientation
@@ -33,7 +34,12 @@ class MainView : View() {
                     }
                 }
                 menu("Edit") {
-                    item("Create Customer").actionEvents().map { Unit }.subscribe(controller.createNewCustomer)
+                    item("Create Customer"){
+                        actionEvents()
+                            .map { Unit }
+                            .subscribe(controller.createNewCustomer)
+                    }
+
                 }
             }
             center = splitpane {
