@@ -29,8 +29,13 @@ class MainView : View() {
             top = menubar {
                 menu("File") {
                     item("Refresh").apply {
+                        action {
+                            controller.refreshCustomers()
+                        }
+
                         actionEvents().map { Unit }.subscribe(controller.refreshCustomers)
-                        actionEvents().map { Unit }.subscribe(controller.refreshSalesPeople)
+//                        actionEvents().map { Unit }.subscribe(controller.refreshSalesPeople)
+
                     }
                 }
                 menu("Edit") {

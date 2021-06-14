@@ -1,17 +1,16 @@
 package view
 
 import app.mainModule
-import domain.persistence.Persistence
-import domain.persistence.initializeData
 import io.reactivex.schedulers.Schedulers
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.koin.core.component.inject
+import org.junit.jupiter.api.extension.ExtendWith
 import org.koin.core.context.startKoin
-import org.koin.test.get
-import org.koin.test.inject
+import org.testfx.framework.junit5.ApplicationExtension
 import tornadofx.*
 
+
+@ExtendWith(ApplicationExtension::class)
 class ApplicationControllerTest : TornadoFxWithKoinTest {
 
     @BeforeEach

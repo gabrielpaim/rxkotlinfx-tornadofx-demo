@@ -85,6 +85,7 @@ dependencies {
     testImplementation("io.insert-koin:koin-test-junit5:$koin_version") {
         exclude(group: "junit", module: "junit")
     }
+    testImplementation("org.testfx:testfx-junit5:4.0.16-alpha")
 }
 
 jar {

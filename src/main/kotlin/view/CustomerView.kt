@@ -29,14 +29,14 @@ class CustomerView : View() {
     private val controller: ApplicationController by inject()
     private var table: TableView<Customer> by singleAssign()
 
-    private val db: Persistence by di()
+//    private val db: Persistence by di()
 
     var selectedCustomers: ObservableList<Customer> by singleAssign()
 
     override val root = borderpane {
         top = label("CUSTOMER").addClass(Styles.heading)
 
-        center = tableview<Customer> {
+        center = tableview(controller.customers) {
             readonlyColumn("ID", Customer::id)
             readonlyColumn("NAME", Customer::name)
 
@@ -55,7 +55,7 @@ class CustomerView : View() {
 
             //Import data and refresh event handling
 
-            controller.refreshCustomers (items)
+            controller.refreshCustomers()
 
 //            controller.refreshCustomers
 //                .startWith(Unit)
@@ -190,69 +190,37 @@ class CustomerView : View() {
                 textFill = Color.RED
 
                 action {
-                    controller.deleteCustomers(table.selectionModel.selectedItems)
-                }
+                    val deleteItems = table.selectionModel.selectedItems.mapNotNull { it.id }.toSet()
 
-//                actionEvents()
-//                    .map {
-//                        table
-//                            .selectionModel
-//                            .selectedItems
-//                            .asSequence()
-//                            .map { it.id }
-//                            .filterNotNull()
-//                            .toSet()
-//                    }
-//                    .subscribe(controller.deleteCustomers)
+                    Alert(Alert.AlertType.WARNING, "Are you sure you want to delete these ${deleteItems.size} customers?", ButtonType.YES, ButtonType.NO)
+                        .showAndWait()
+                        .filter { it == ButtonType.YES }
+                        .map { deleteItems }
+                        .map { controller.deleteCustomers(it) }
+                }
             }
         }
 
-        //create new Customer requests
-        controller.createNewCustomer
-            .flatMapMaybe { NewCustomerDialog().toMaybe() }
-            .flatMapMaybe { it }
-            .flatMapSingle {
-                db
-                    .loadCustomer(it.id)
-                    .toSingle()
-            }
-            .subscribe {
-                table.items.add(it)
-                table.selectionModel.clearSelection()
-                table.selectionModel.select(it)
-                table.requestFocus()
-            }
-
-
-        // handle Customer deletions
-        val deletions = controller
-            .deleteCustomers
-            .flatMapSingle { table.currentSelections.toList() }
-            .flatMapSingle { deleteItems ->
-                Alert(Alert.AlertType.WARNING, "Are you sure you want to delete these ${deleteItems.size} customers?", ButtonType.YES, ButtonType.NO)
-                    .toMaybe()
-                    .filter { it == ButtonType.YES }
-                    .map { deleteItems }
-                    .flatMapObservable { it.toObservable() }
-                    .flatMapSingle {
-                        if (it.id != null) {
-                            db.deleteCustomer(it.id)
-                        } else {
-                            Maybe.empty<Int>().toSingle()
-                        }
-                    }
-                    .toSet()
-            }
-            .publish() //publish() to prevent multiple subscriptions triggering alert multiple times
-
-        deletions.subscribe(controller.deletedCustomers)
+//        //create new Customer requests
+//        controller.createNewCustomer
+//            .flatMapMaybe { NewCustomerDialog().toMaybe() }
+//            .flatMapMaybe { it }
+//            .flatMapSingle {
+//                db
+//                    .loadCustomer(it.id)
+//                    .toSingle()
+//            }
+//            .subscribe {
+//                table.items.add(it)
+//                table.selectionModel.clearSelection()
+//                table.selectionModel.select(it)
+//                table.requestFocus()
+//            }
 
         //refresh on deletion
         controller.deletedCustomers
             .map { Unit }
             .subscribe(controller.refreshCustomers) //push this refresh customers
 
-        //trigger the publish
-        deletions.connect()
     }
 }

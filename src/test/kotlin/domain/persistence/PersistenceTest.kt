@@ -1,6 +1,7 @@
 package domain.persistence
 
 import app.mainModule
+import domain.Assignment
 import domain.Customer
 import domain.SalesPerson
 import org.junit.jupiter.api.BeforeEach
@@ -98,6 +99,23 @@ class PersistenceTest: ClosingKoinTest {
         db.listAllSalesPersons()
             .test()
             .assertValueCount(1)
+
+    }
+
+    @Test
+    fun `list sales person items`() {
+        db.saveSalesPerson(SalesPerson("Sales", "Person", 1)).blockingGet()
+        db.saveCustomer(Customer("C1", 1)).blockingGet()
+        db.saveCustomer(Customer("C2", 2)).blockingGet()
+        db.saveAssignment(Assignment(salesPersonId = 1, customerId = 1, order = 1)).blockingGet()
+        db.saveAssignment(Assignment(salesPersonId = 1, customerId = 2, order = 2)).blockingGet()
+
+        db.listSalesPersonItems()
+            .test()
+            .assertValueCount(1)
+            .assertValue {
+                it.assignmentIds == listOf(1,2)
+            }
 
     }
 

@@ -3,6 +3,7 @@ package domain.persistence
 import domain.Assignment
 import domain.Customer
 import domain.SalesPerson
+import domain.SalesPersonItem
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -35,5 +36,7 @@ interface Persistence {
     fun saveAssignment(assignment: Assignment): Single<Assignment>
 
     fun deleteAssignment(assignmentId: Int): Single<Int>
+
+    fun listSalesPersonItems(): Observable<SalesPersonItem>
 
 }

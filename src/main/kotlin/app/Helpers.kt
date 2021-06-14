@@ -4,7 +4,6 @@ import io.reactivex.Observable
 import javafx.collections.ObservableList
 import javafx.scene.control.TableView
 import io.reactivex.rxkotlin.toObservable
-import tornadofx.asyncItems
 import java.util.*
 
 /**
@@ -17,7 +16,7 @@ fun <T: Any> Observable<T>.flatCollect() = toList().flatMapObservable { it.toObs
 /**
  * Adds the item to an `Observablelist<T>` if it is not present
  */
-fun <T> ObservableList<T>.addIfAbsent(item: T): Boolean {
+fun <T> MutableList<T>.addIfAbsent(item: T): Boolean {
     return if (!contains(item)) {
         add(item)
         true
@@ -29,13 +28,13 @@ fun <T> ObservableList<T>.addIfAbsent(item: T): Boolean {
 /**
  * Adds each item to an `Observablelist<T>` if it is not present
  */
-fun <T> ObservableList<T>.addIfAbsent(vararg items: T) {
+fun <T> MutableList<T>.addIfAbsent(vararg items: T) {
     for (item in items) {
         addIfAbsent(item)
     }
 }
 
-fun <T> ObservableList<T>.moveUp(item: T) {
+fun <T> MutableList<T>.moveUp(item: T) {
     val index = indexOf(item)
     if (index > 0) {
         remove(item)
@@ -43,7 +42,7 @@ fun <T> ObservableList<T>.moveUp(item: T) {
     }
 }
 
-fun <T> ObservableList<T>.moveDown(item: T) {
+fun <T> MutableList<T>.moveDown(item: T) {
     val index = indexOf(item)
     if (index >= 0 && index < (size - 1)) {
         remove(item)

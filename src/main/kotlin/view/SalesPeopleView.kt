@@ -3,6 +3,7 @@ package view
 import app.*
 import com.github.thomasnield.rxkotlinfx.*
 import domain.SalesPerson
+import domain.SalesPersonItem
 import domain.persistence.Persistence
 import io.reactivex.Maybe
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler
@@ -21,7 +22,7 @@ import tornadofx.*
 
 class SalesPeopleView: View() {
     private val controller: ApplicationController by inject()
-    private var table: TableView<SalesPerson> by singleAssign()
+    private var table: TableView<SalesPersonItem> by singleAssign()
 
     private val fontAwesome = GlyphFontRegistry.font("FontAwesome")
     private val saveGlyph = fontAwesome.create(FontAwesome.Glyph.SAVE)
@@ -49,9 +50,14 @@ class SalesPeopleView: View() {
             //refresh button
             button("",refreshGlyph) {
                 useMaxWidth = true
-                actionEvents()
-                    .map { Unit }
-                    .subscribe(controller.refreshSalesPeople)
+
+                action {
+                    controller.refreshSalesPersons()
+                }
+
+//                actionEvents()
+//                    .map { Unit }
+//                    .subscribe(controller.refreshSalesPeople)
             }
 
             //add button
@@ -82,31 +88,41 @@ class SalesPeopleView: View() {
 
         top = label("SALES PEOPLE").addClass(Styles.heading)
 
-        center = tableview<SalesPerson> {
+        center = tableview(controller.salesPersonItems) {
             table = this
 
-            readonlyColumn("ID",SalesPerson::id)
-            readonlyColumn("First Name",SalesPerson::firstName)
-            readonlyColumn("Last Name",SalesPerson::lastName)
-
-            column("Assigned Clients", SalesPerson::customerAssignmentsConcat)
-                .cellFormat { (newList, originalList) ->
+            readonlyColumn("ID",SalesPersonItem::id)
+            readonlyColumn("First Name",SalesPersonItem::firstName)
+            readonlyColumn("Last Name",SalesPersonItem::lastName)
+            readonlyColumn("Assigned Clients", SalesPersonItem::assignmentIds)
+                .cellFormat { list ->
                     graphic = textflow {
-                        val iter = newList.iterator()
-                        while(iter.hasNext()) {
-                            val newValue = iter.next()
-                            text(newValue.toString()) {
-                                if (!originalList.contains(newValue)) {
-                                    fill = Color.RED
-                                }
-                            }
-                            if (iter.hasNext()) {
-                                text("|")
-                            }
+                        list.forEach {
+                            text(it.toString())
                         }
                     }
-
                 }
+
+            itemsProperty()
+
+//            column("Assigned Clients", SalesPerson::customerAssignmentsConcat)
+//                .cellFormat { (newList, originalList) ->
+//                    graphic = textflow {
+//                        val iter = newList.iterator()
+//                        while(iter.hasNext()) {
+//                            val newValue = iter.next()
+//                            text(newValue.toString()) {
+//                                if (!originalList.contains(newValue)) {
+//                                    fill = Color.RED
+//                                }
+//                            }
+//                            if (iter.hasNext()) {
+//                                text("|")
+//                            }
+//                        }
+//                    }
+//
+//                }
 
 
             selectionModel.selectionMode = SelectionMode.MULTIPLE
@@ -118,76 +134,66 @@ class SalesPeopleView: View() {
 
             // handle search requests
             controller.searchCustomerUsages.subscribe { ids ->
-                moveToTopWhere { it.customerAssignments.any { it in ids } }
+                moveToTopWhere { it.assignmentIds.any { it in ids } }
                 requestFocus()
             }
 
-            //handle adds
-            controller.applyCustomers.subscribe { ids ->
-                selectionModel.selectedItems.asSequence().filterNotNull().forEach {
-                    it.customerAssignments.addIfAbsent(*ids.toTypedArray())
-                }
-            }
-
-            //handle removals
-            controller.removeCustomerUsages.subscribe { ids ->
-                selectionModel.selectedItems.asSequence().filterNotNull().forEach {
-                    it.customerAssignments.removeAll(ids)
-                }
-            }
+//            //handle adds
+//            controller.applyCustomers.subscribe { ids ->
+//                selectionModel.selectedItems.asSequence().filterNotNull().forEach {
+//                    it.assignmentIds.addIfAbsent(*ids.toTypedArray())
+//                }
+//            }
+//
+//            //handle removals
+//            controller.removeCustomerUsages.subscribe { ids ->
+//                selectionModel.selectedItems.asSequence().filterNotNull().forEach {
+//                    it.assignmentIds.removeAll(ids)
+//                }
+//            }
 
             controller.handleAssignments(items)
 
-            //handle refresh events and import data
-            controller.refreshSalesPeople
-                .doOnNext { items.forEach { it.dispose() } } //important to kill subscriptions on each SalesPerson
-                .startWith(Unit)
-                .flatMapSingle {
-                    db.listAllSalesPersons().toList()
-                }.subscribe {
-                    items.setAll(it)
-                }
-
-            //handle move up and move down requests
-            controller.moveCustomerUp
-                .map { it to selectedItem?.customerAssignments }
-                .filter { it.second != null }
-                .subscribe { it.second!!.moveUp(it.first) }
-
-            //handle move up and move down requests
-            controller.moveCustomerDown
-                .map { it to selectedItem?.customerAssignments }
-                .filter { it.second != null }
-                .subscribe { it.second!!.moveDown(it.first) }
+//            //handle move up and move down requests
+//            controller.moveCustomerUp
+//                .map { it to selectedItem?.customerAssignments }
+//                .filter { it.second != null }
+//                .subscribe { it.second!!.moveUp(it.first) }
+//
+//            //handle move up and move down requests
+//            controller.moveCustomerDown
+//                .map { it to selectedItem?.customerAssignments }
+//                .filter { it.second != null }
+//                .subscribe { it.second!!.moveDown(it.first) }
         }
     }
     init {
-        //when customers are deleted, remove their usages
-        controller.deletedCustomers.flatMap { deleteIds ->
-            table.items.toObservable().doOnNext { it.customerAssignments.removeAll(deleteIds) }
-        }.subscribe()
+//        //when customers are deleted, remove their usages
+//        controller.deletedCustomers.flatMap { deleteIds ->
+//            table.items.toObservable().doOnNext { it.customerAssignments.removeAll(deleteIds) }
+//        }.subscribe()
 
-        //handle new Sales Person request
-        controller.createNewSalesPerson
-            .flatMap {
-                NewSalesPersonDialog()
-                    .toMaybe()
-                    .toObservable()
-                    .flatMap { it.toObservable() }
-                    .flatMapMaybe {
-                        if(it.id != null) {
-                            db.loadSalesPerson(it.id)
-                        } else {
-                            Maybe.empty()
-                        }
-                    }
-            }
-            .subscribe {
-                table.selectionModel.clearSelection()
-                table.items.add(it)
-                table.selectionModel.select(it)
-                table.requestFocus()
-            }
+//        //handle new Sales Person request
+//        controller.createNewSalesPerson
+//            .flatMap {
+//                NewSalesPersonDialog()
+//                    .toMaybe()
+//                    .toObservable()
+//                    .flatMap { it.toObservable() }
+//                    .flatMapMaybe {
+//                        if(it.id != null) {
+//                            db.loadSalesPerson(it.id)
+//                        } else {
+//                            Maybe.empty()
+//                        }
+//                    }
+//            }
+//            .subscribe {
+//                table.selectionModel.clearSelection()
+//                table.items.add(it)
+//                table.selectionModel.select(it)
+//                table.requestFocus()
+//            }
 
         //handle sales person deletions
         controller.deleteSalesPerson

@@ -4,6 +4,7 @@ import app.toSet
 import domain.Assignment
 import domain.Customer
 import domain.SalesPerson
+import domain.SalesPersonItem
 import domain.persistence.Persistence
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -11,17 +12,26 @@ import io.reactivex.rxkotlin.Singles
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.rxkotlin.toObservable
 import io.reactivex.rxkotlin.zipWith
+import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.BehaviorSubject
+import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.ObservableList
 import javafx.scene.control.Alert
 import tornadofx.*
 
+
+/**
+ * Responsabilidade: Cuidar da lógica de negócio da aplicação.
+ */
 class ApplicationController: Controller() {
 
     private val db : Persistence by di()
 
 //    data class SearchCustomersUsagesEvent(val customerIds: Set<Int>) : FXEvent()
 //    object RefreshSalesPerson: FXEvent()
+
+    val salesPersonItems = listOf<SalesPersonItem>().observable()
+    val customers = listOf<Customer>().observable()
 
     val searchCustomers = BehaviorSubject.create<Set<Int>>().apply {
         subscribe {
@@ -38,10 +48,10 @@ class ApplicationController: Controller() {
     val applyCustomers = BehaviorSubject.create<Set<Int>>()
     val removeCustomerUsages = BehaviorSubject.create<Set<Int>>()
 
-    val refreshSalesPeople = BehaviorSubject.create<Unit>()
+//    val refreshSalesPeople = BehaviorSubject.create<Unit>()
     val refreshCustomers = BehaviorSubject.create<Unit>()
 
-    val selectedSalesPeople = BehaviorSubject.create<Set<SalesPerson>>()
+    val selectedSalesPeople = BehaviorSubject.create<Set<SalesPersonItem>>()
     val selectedApplications = BehaviorSubject.create<Set<Int>>()
 
     val moveCustomerUp = BehaviorSubject.create<Int>()
@@ -49,12 +59,20 @@ class ApplicationController: Controller() {
 
     val saveAssignments = BehaviorSubject.create<Unit>()
     val createNewCustomer = BehaviorSubject.create<Unit>()
-    val deleteCustomers = BehaviorSubject.create<Set<Int>>()
+
     val deletedCustomers = BehaviorSubject.create<Set<Int>>()
 
     val createNewSalesPerson = BehaviorSubject.create<Unit>()
     val deleteSalesPerson = BehaviorSubject.create<Set<Int>>()
 
+    init {
+
+    }
+
+    fun refreshSalesPersons() {
+
+
+    }
 
     fun searchSelectedCustomers(customers: List<Customer>) {
 //        fire(SearchCustomersUsagesEvent(customers.mapNotNull { it.id }.toSet()))
@@ -69,27 +87,57 @@ class ApplicationController: Controller() {
         removeCustomerUsages.onNext(customers.mapNotNull { it.id }.toSet())
     }
 
-    fun refreshCustomers(items: ObservableList<Customer>){
-        refreshCustomers
-            .startWith(Unit)
-            .flatMapSingle {
-                db.listAllCustomers().toList()
-            }.subscribeBy(
-                onNext = { items.setAll(it) },
-                onError = { alert(Alert.AlertType.ERROR, "PROBLEM!", it.message ?: "").show() }
-            )
+    /**
+     * refresh controller's state.
+     */
+    fun refreshCustomers(): Single<List<Customer>> {
+        return db
+            .listAllCustomers()
+            .subscribeOn(Schedulers.io())
+            .toList()
+            .doOnSuccess {
+                runLater {
+                    customers.setAll(it)
+                }
+            }
+
+//                runLater {
+//                    alert(Alert.AlertType.ERROR, "PROBLEM!", it.message ?: "").show()
+//                }
     }
 
-    fun deleteCustomers (items: ObservableList<Customer>){
-        deleteCustomers.onNext(items.mapNotNull { it.id }.toSet())
+    fun deleteSalesPerson(id: Int) {
+        db.deleteSalesPerson(id)
+            .subscribe({
+
+            },{
+
+            })
+        // deletar sales person
+        // refresh state
+//        salesPersonItems.setAll()
+
     }
 
+
+
+    fun deleteCustomers(items: Set<Int>) {
+        Observable
+            .fromIterable(items)
+            .flatMapSingle { db.deleteCustomer(it) }
+            .toSet()
+            .subscribe({
+                deletedCustomers.onNext(it)
+            },{
+                // TODO error
+            })
+    }
 
     fun searchSelectedApplied() {
         val selectedSalesPeopleIds = selectedSalesPeople
             .take(1)
             .flatMap { it.toObservable() }
-            .flatMap { it.customerAssignments.toObservable() }
+            .flatMap { it.assignmentIds.toObservable() }
             .distinct()
             .toSet()
 
@@ -106,23 +154,21 @@ class ApplicationController: Controller() {
 //        }.subscribe(controller.searchCustomers)
     }
 
-    fun handleAssignments(items: List<SalesPerson>) {
-        saveAssignments
-            .flatMapMaybe {
-                items
-                    .toObservable()
-                    .flatMapMaybe { saveAssignments(it.id, it.customerAssignments).toMaybe() }
-                    .reduce { x,y ->
-                        x + y
-                    }
-                    .doOnSuccess { println("Committed $it changes") }
-            }
-            .map { }
-            .subscribe(refreshSalesPeople)
+    fun handleAssignments(items: List<SalesPersonItem>) {
+//        saveAssignments
+//            .flatMapMaybe {
+//                items
+//                    .toObservable()
+//                    .flatMapMaybe { saveAssignments(it.id, it.assignmentIds).toMaybe() }
+//                    .reduce { x,y -> x + y }
+//                    .doOnSuccess { println("Committed $it changes") }
+//            }
+//            .map { }
+//            .subscribe(refreshSalesPeople)
     }
 
     //Compares original and new Customer ID assignments and writes them to database
-    fun saveAssignments(id: Int?, customerAssignments: ObservableList<Int>): Single<Long> {
+    fun saveAssignments(id: Int?, customerAssignments: List<Int>): Single<Long> {
         return if (id == null) {
             Single.error(IllegalArgumentException("SalesPerson is not saved"))
         } else {

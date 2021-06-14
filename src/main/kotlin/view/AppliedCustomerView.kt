@@ -24,7 +24,7 @@ class AppliedCustomerView : View() {
     private val controller: ApplicationController by inject()
     private var table: TableView<Customer> by singleAssign()
 
-    private val db: Persistence by di()
+//    private val db: Persistence by di()
 
     init {
         with(root) {
@@ -50,64 +50,65 @@ class AppliedCustomerView : View() {
 
                 // Subscribe to selections in SalesPeopleView extract a list of customers
 
-                // If multiple SalesPeople are selected, we consolidate their customers distinctly.
-                // Otherwise we will push out a hot list of Customers for that one SalesPerson.
-                // It will update automatically and the switchMap() will kill it when the selection changes
-                controller.selectedSalesPeople
-                    .switchMap { selectedPeople ->
-                        //the switchMap() is amazing! it unsubscribes the previous mapped Observable when a new one comes in
-
-                        if (selectedPeople.size == 1) {
-                            selectedPeople
-                                .toObservable()
-                                .flatMap { it ->
-                                    it.customerAssignments
-                                        .onChangedObservable()
-                                        .switchMapSingle { customersIds ->
-                                            customersIds.toObservable()
-                                                .flatMapSingle {
-                                                    db.loadCustomer(it).toSingle()
-                                                }
-                                                .toList()
-                                        }
-                                }
-                        } else {
-                            selectedPeople
-                                .toObservable()
-                                .flatMap { it.customerAssignments.toObservable() }
-                                .distinct()
-                                .flatMapSingle {
-                                    db.loadCustomer(it)
-                                        .toSingle()
-                                }
-                                .toSortedList { x, y ->
-                                    if (x.id != null && y.id != null) {
-                                        x.id.compareTo(y.id)
-                                    } else {
-                                        -1
-                                    }
-                                }
-//                                .map { listCustomer ->
-//                                    listCustomer
-//                                        .filter { customer ->
-//                                            customer.id != -1
+//                // If multiple SalesPeople are selected, we consolidate their customers distinctly.
+//                // Otherwise we will push out a hot list of Customers for that one SalesPerson.
+//                // It will update automatically and the switchMap() will kill it when the selection changes
+//                controller.selectedSalesPeople
+//                    .switchMap { selectedPeople ->
+//                        //the switchMap() is amazing! it unsubscribes the previous mapped Observable when a new one comes in
+//
+//                        if (selectedPeople.size == 1) {
+//                            selectedPeople
+//                                .toObservable()
+//                                .flatMap { it ->
+//                                    it.customerAssignments
+//                                        .onChangedObservable()
+//                                        .switchMapSingle { customersIds ->
+//                                            customersIds.toObservable()
+//                                                .flatMapSingle {
+//                                                    db.loadCustomer(it).toSingle()
+//                                                }
+//                                                .toList()
 //                                        }
 //                                }
-                                .toObservable()
-                        }
-                    }.subscribeBy(
-                        onNext = {
-                            items.setAll(it)
-                            selectWhere {
-                                it.id in selectionModel.selectedItems.asSequence().filterNotNull().map { it.id }.toSet()
-                            }
-                            requestFocus()
-                            resizeColumnsToFitContent()
-                        },
-                        onError = {
-                            println("Error--${it.message}")
-                        }
-                    )
+//                        } else {
+//                            selectedPeople
+//                                .toObservable()
+//                                .flatMap { it.customerAssignments.toObservable() }
+//                                .distinct()
+//                                .flatMapSingle {
+//                                    db.loadCustomer(it)
+//                                        .toSingle()
+//                                }
+//                                .toSortedList { x, y ->
+//                                    if (x.id != null && y.id != null) {
+//                                        x.id.compareTo(y.id)
+//                                    } else {
+//                                        -1
+//                                    }
+//                                }
+////                                .map { listCustomer ->
+////                                    listCustomer
+////                                        .filter { customer ->
+////                                            customer.id != -1
+////                                        }
+////                                }
+//                                .toObservable()
+//                        }
+//                    }.subscribeBy(
+//                        onNext = {
+//                            items.setAll(it)
+//                            selectWhere {
+//                                it.id in selectionModel.selectedItems.asSequence().filterNotNull().map { it.id }.toSet()
+//                            }
+//                            requestFocus()
+//                            resizeColumnsToFitContent()
+//                        },
+//                        onError = {
+//                            println("Error--${it.message}")
+//                        }
+//                    )
+
             }
             left = toolbar {
                 orientation = Orientation.VERTICAL

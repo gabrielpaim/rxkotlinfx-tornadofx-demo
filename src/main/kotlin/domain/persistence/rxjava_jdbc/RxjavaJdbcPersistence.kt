@@ -4,6 +4,7 @@ import app.flatCollect
 import domain.Assignment
 import domain.Customer
 import domain.SalesPerson
+import domain.SalesPersonItem
 import domain.persistence.Persistence
 import io.reactivex.Maybe
 import io.reactivex.Observable
@@ -126,6 +127,20 @@ class RxjavaJdbcPersistence(private val db: Connection): Persistence {
         return db.execute("DELETE FROM ASSIGNMENT WHERE ID = :id")
             .parameter("id",assignmentId)
             .toSingle()
+    }
+
+    override fun listSalesPersonItems(): Observable<SalesPersonItem> {
+        return listAllSalesPersons()
+            .flatMapSingle { salesPerson ->
+                listAllAssignmentsForSalesPerson(salesPerson.id!!)
+                    .toList()
+                    .map { assignments -> salesPerson to assignments.map { it.id!! } }
+            }
+            .map { (salesPerson, assignments) ->
+                SalesPersonItem(salesPerson.id!!, salesPerson.firstName, salesPerson.lastName, assignments)
+            }
+
+//        return db.execute("SELECT ID,FIRST_NAME,LAST_NAME,* FROM SALES_PERSON LEFT JOIN ASSIGNMENT ON SALES_PERSON.ID=ASSIGNMENT.SALES_PERSON_ID")
     }
 
     companion object {
